@@ -161,16 +161,16 @@ def plot_result(data_frame):
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['muon_not_tau_P', 'mu'], ['tau_P', 'tau']]
     particles = ['Kminus_P', 'proton_P', 'muon_not_tau_P', 'tau_P']
     energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i+'X'] for i in particles])
-    mom_y = sum([data_frame[i+'Y'] for i in particles])
-    mom_z = sum([data_frame[i+'Z'] for i in particles])
+    mom_x = sum([data_frame[i + 'X'] for i in particles])
+    mom_y = sum([data_frame[i + 'Y'] for i in particles])
+    mom_z = sum([data_frame[i + 'Z'] for i in particles])
     print(mom_x)
 
     # mom_sum = pd.DataFrame(data=[energy, mom_x, mom_y, mom_z], columns=['P', 'X', 'Y', 'Z'])
     # print(mom_sum)
     # # momenta_squared = sum ** 2
     # momenta_squared = mom_sum.pow(2)
-    sum_m = np.sqrt(energy**2 - mom_x**2 - mom_y**2 - mom_z**2)
+    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
     plt.hist(sum_m, bins=50)
     plt.show()
     return sum_m
