@@ -6,10 +6,12 @@ def load_data(columns, year=2016):
     file = uproot.open(f"merge_{year}.root")
     events = file['LbTuple/DecayTree']
     events_frame = events.pandas.df(columns)
-    events_frame = events_frame.reset_index(level=['subentry'])
-    # TODO why sub-entries?
-    events_frame = events_frame[events_frame['subentry'] < 1]
-    events_frame = events_frame.drop('subentry', axis=1)
+    print(events.show())
+    print(events_frame.index)
+    # events_frame = events_frame.reset_index(level=['subentry'])
+    # no sub-entries when using ownpv so sub-entries have something to do with other primary vertices
+    # events_frame = events_frame[events_frame['subentry'] < 1]
+    # events_frame = events_frame.drop('subentry', axis=1)
     return events_frame
 
 
@@ -19,7 +21,7 @@ def add_branches():
     :return:
     """
     lb = ["Lb_M", "Lb_ENDVERTEX_CHI2", "Lb_DIRA_OWNPV"]
-    primary = ['PVX', 'PVY', 'PVZ', 'PVXERR', 'PVYERR', 'PVZERR', 'Lb_PV_X', 'Lb_PV_Y', 'Lb_PV_Z']
+    primary = ['Lb_OWNPV_X', 'Lb_OWNPV_Y', 'Lb_OWNPV_Z', 'Lb_OWNPV_XERR', 'Lb_OWNPV_YERR', 'Lb_OWNPV_ZERR']
     end_vertex = ['Lb_ENDVERTEX_X', 'Lb_ENDVERTEX_Y', 'Lb_ENDVERTEX_Z', 'Lb_ENDVERTEX_XERR', 'Lb_ENDVERTEX_YERR',
                   'Lb_ENDVERTEX_ZERR']
     final_ipchi2 = ["mu1_IPCHI2_OWNPV", "mu2_IPCHI2_OWNPV", "proton_IPCHI2_OWNPV", "Kminus_IPCHI2_OWNPV"]
