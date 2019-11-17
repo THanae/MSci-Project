@@ -543,25 +543,418 @@ def tau_momentum_mass(data_frame):
     tau_p_x, tau_p_y, tau_p_z = [], [], []
     for i in range(len(data_frame)):
         temp_series = data_frame.loc[i]
-        end_xyz = [temp_series['Lb_ENDVERTEX_X'], temp_series['Lb_ENDVERTEX_Y'], temp_series['Lb_ENDVERTEX_Z']]
+        end_xyz = [temp_series['pKmu_ENDVERTEX_X'], temp_series['pKmu_ENDVERTEX_Y'], temp_series['pKmu_ENDVERTEX_Z']]
         tau_vector = temp_series['tau_decay_point'] - end_xyz
         vector = temp_series['vectors']
-        tau_distance = np.linalg.norm(tau_vector)
-        # TODO obtain error on tau distance
+        tau_distance = np.linalg.norm(tau_vector)  # error on tau distance not needed for now
+        momentum_tauMu = [data_frame['tauMu_PX'][i], data_frame['tauMu_PY'][i], data_frame['tauMu_PZ'][i]]
+        pkmu_vector = [data_frame['pKmu_PX'][i], data_frame['pKmu_PY'][i], data_frame['pKmu_PZ'][i]]
+        vector_plane_lb = data_frame['vectors'][i]
+        vector_with_mu1 = [data_frame['pKmu_PX'][i], data_frame['pKmu_PY'][i], data_frame['pKmu_PZ'][i]]
+        point_tau_mu = [data_frame['tauMu_REFPX'][i], data_frame['tauMu_REFPY'][i], data_frame['tauMu_REFPZ'][i]]
+        determinant = -vector_plane_lb[0] * vector_with_mu1[1] * momentum_tauMu[2] - momentum_tauMu[0] * \
+                      vector_plane_lb[1] * vector_with_mu1[2] - vector_with_mu1[0] * momentum_tauMu[1] * \
+                      vector_plane_lb[2] + momentum_tauMu[0] * vector_with_mu1[1] * vector_plane_lb[2] + \
+                      vector_plane_lb[0] * momentum_tauMu[1] * vector_with_mu1[2] + vector_with_mu1[0] * \
+                      vector_plane_lb[1] * momentum_tauMu[2]
+        inverse_A = [[-momentum_tauMu[2] * vector_with_mu1[1] + momentum_tauMu[1] * vector_with_mu1[2],
+                      -momentum_tauMu[0] * vector_with_mu1[2] + momentum_tauMu[2] * vector_with_mu1[0],
+                      -momentum_tauMu[1] * vector_with_mu1[0] + momentum_tauMu[0] * vector_with_mu1[1]],
+                     [-momentum_tauMu[1] * vector_plane_lb[2] + momentum_tauMu[2] * vector_plane_lb[1],
+                      -momentum_tauMu[2] * vector_plane_lb[0] + momentum_tauMu[0] * vector_plane_lb[2],
+                      -momentum_tauMu[0] * vector_plane_lb[1] + momentum_tauMu[1] * vector_plane_lb[0]],
+                     [vector_plane_lb[1] * vector_with_mu1[2] - vector_plane_lb[2] * vector_with_mu1[1],
+                      vector_plane_lb[2] * vector_with_mu1[0] - vector_plane_lb[0] * vector_with_mu1[2],
+                      vector_plane_lb[0] * vector_with_mu1[1] - vector_plane_lb[1] * vector_with_mu1[0]]]
+        coefficient_matrix = [[vector_plane_lb[i], vector_with_mu1[i], - momentum_tauMu[i]] for i in range(3)]
+        ordinate = [point_tau_mu[i] - end_xyz[i] for i in range(3)]
+        possible_calculation_u = 1 / determinant * sum([inverse_A[2][i] * ordinate[i] for i in range(3)])
         tau_distances_travelled.append(tau_distance)
         angle = np.arccos(np.dot(tau_vector, vector) / (np.linalg.norm(tau_vector) * np.linalg.norm(vector)))
-        # TODO angle error
+        angle_content = np.dot(tau_vector, vector) / (np.linalg.norm(tau_vector) * np.linalg.norm(vector))
+        bottom_content = (np.linalg.norm(tau_vector) * np.linalg.norm(vector))
+        top_content = np.dot(tau_vector, vector)
         angles.append(angle)
         unit_l = vector / np.linalg.norm(vector)
-        # TODO error on unit_l
-        p_tansverse = np.linalg.norm(temp_series['transverse_momentum'])
-        # TODO error on p_transverse
-        tau_mom = p_tansverse / np.tan(angle) * unit_l + temp_series['transverse_momentum']
-        # TODO error on tau_mom (in x, y and z directions)
+        p_transverse = np.linalg.norm(temp_series['transverse_momentum'])
+        tau_mom = p_transverse / np.tan(angle) * unit_l + temp_series['transverse_momentum']
+        tau_par = p_transverse / np.tan(angle) * unit_l  # some stuff will just need tau par
+        #####
+        di_x_dp_k_mu_ref_x = 1 - inverse_A[2][0] / determinant * momentum_tauMu[0]
+        di_x_dp_k_mu_ref_y = - inverse_A[2][1] / determinant * momentum_tauMu[0]
+        di_x_dp_k_mu_ref_z = - inverse_A[2][2] / determinant * momentum_tauMu[0]
+        di_y_dp_k_mu_ref_x = - inverse_A[2][0] / determinant * momentum_tauMu[1]
+        di_y_dp_k_mu_ref_y = 1 - inverse_A[2][1] / determinant * momentum_tauMu[1]
+        di_y_dp_k_mu_ref_z = - inverse_A[2][2] / determinant * momentum_tauMu[1]
+        di_z_dp_k_mu_ref_x = - inverse_A[2][0] / determinant * momentum_tauMu[2]
+        di_z_dp_k_mu_ref_y = - inverse_A[2][1] / determinant * momentum_tauMu[2]
+        di_z_dp_k_mu_ref_z = 1 - inverse_A[2][2] / determinant * momentum_tauMu[2]
+        dt_x_dp_k_mu_ref_x = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * (((di_x_dp_k_mu_ref_x - 1) * vector_plane_lb[
+            0] + di_y_dp_k_mu_ref_x * vector_plane_lb[1] + di_z_dp_k_mu_ref_x * vector_plane_lb[2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * (-1 + di_x_dp_k_mu_ref_x) + tau_vector[1] * di_y_dp_k_mu_ref_x +
+                                        tau_vector[2] * di_z_dp_k_mu_ref_x) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+        dt_x_dp_k_mu_ref_y = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * ((di_x_dp_k_mu_ref_y * vector_plane_lb[
+            0] + (di_y_dp_k_mu_ref_y - 1) * vector_plane_lb[1] + di_z_dp_k_mu_ref_y * vector_plane_lb[
+                                                             2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * di_x_dp_k_mu_ref_y + tau_vector[1] * (di_y_dp_k_mu_ref_y - 1) +
+                                        tau_vector[2] * di_z_dp_k_mu_ref_y) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+        dt_x_dp_k_mu_ref_z = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * ((di_x_dp_k_mu_ref_z * vector_plane_lb[
+            0] + di_y_dp_k_mu_ref_z * vector_plane_lb[1] + (di_z_dp_k_mu_ref_z - 1) * vector_plane_lb[
+                                                             2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * di_x_dp_k_mu_ref_z + tau_vector[1] * di_y_dp_k_mu_ref_z +
+                                        tau_vector[2] * (di_z_dp_k_mu_ref_z - 1)) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+        #####
+        di_x_d_tau_ref_x = inverse_A[2][0] / determinant * momentum_tauMu[0]
+        di_x_d_tau_ref_y = inverse_A[2][1] / determinant * momentum_tauMu[0]
+        di_x_d_tau_ref_z = inverse_A[2][2] / determinant * momentum_tauMu[0]
+        di_y_d_tau_ref_x = inverse_A[2][0] / determinant * momentum_tauMu[1]
+        di_y_d_tau_ref_y = inverse_A[2][1] / determinant * momentum_tauMu[1]
+        di_y_d_tau_ref_z = inverse_A[2][2] / determinant * momentum_tauMu[1]
+        di_z_d_tau_ref_x = inverse_A[2][0] / determinant * momentum_tauMu[2]
+        di_z_d_tau_ref_y = inverse_A[2][1] / determinant * momentum_tauMu[2]
+        di_z_d_tau_ref_z = inverse_A[2][2] / determinant * momentum_tauMu[2]
+        #####
+
+        dt_x_d_tau_ref_x = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * ((di_x_d_tau_ref_x * vector_plane_lb[
+            0] + di_y_d_tau_ref_x * vector_plane_lb[1] + di_z_d_tau_ref_x * vector_plane_lb[2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * di_x_d_tau_ref_x + tau_vector[1] * di_y_d_tau_ref_x +
+                                        tau_vector[2] * di_z_d_tau_ref_x) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+        dt_x_d_tau_ref_y = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * ((di_x_d_tau_ref_y * vector_plane_lb[
+            0] + di_y_d_tau_ref_y * vector_plane_lb[1] + di_z_d_tau_ref_y * vector_plane_lb[
+                                                             2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * di_x_d_tau_ref_y + tau_vector[1] * di_y_d_tau_ref_y +
+                                        tau_vector[2] * di_z_d_tau_ref_y) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+        dt_x_d_tau_ref_z = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * ((di_x_d_tau_ref_z * vector_plane_lb[
+            0] + di_y_d_tau_ref_z * vector_plane_lb[1] + di_z_d_tau_ref_z * vector_plane_lb[
+                                                             2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * di_x_d_tau_ref_z + tau_vector[1] * di_y_d_tau_ref_z +
+                                        tau_vector[2] * di_z_d_tau_ref_z) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+
+        par_vector = data_frame['vectors'][i] / np.linalg.norm(data_frame['vectors'][i])
+        par = np.dot(pkmu_vector, par_vector) * np.array(pkmu_vector) / np.linalg.norm(pkmu_vector)
+        ###
+        di_x_dp_k_mu_mom_x = ((vector_plane_lb[2] * ordinate[1] - vector_plane_lb[1] * ordinate[2]) - (
+                (momentum_tauMu[2] * vector_plane_lb[1] - momentum_tauMu[1] * vector_plane_lb[2]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[0]
+        di_x_dp_k_mu_mom_y = ((vector_plane_lb[0] * ordinate[2] - vector_plane_lb[2] * ordinate[0]) - (
+                (momentum_tauMu[0] * vector_plane_lb[2] - momentum_tauMu[2] * vector_plane_lb[0]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[0]
+        di_x_dp_k_mu_mom_z = ((vector_plane_lb[1] * ordinate[0] - vector_plane_lb[0] * ordinate[1]) - (
+                (momentum_tauMu[1] * vector_plane_lb[0] - momentum_tauMu[0] * vector_plane_lb[1]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[0]
+        di_y_dp_k_mu_mom_x = ((vector_plane_lb[2] * ordinate[1] - vector_plane_lb[1] * ordinate[2]) - (
+                (momentum_tauMu[2] * vector_plane_lb[1] - momentum_tauMu[1] * vector_plane_lb[2]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[1]
+        di_y_dp_k_mu_mom_y = ((vector_plane_lb[0] * ordinate[2] - vector_plane_lb[2] * ordinate[0]) - (
+                (momentum_tauMu[0] * vector_plane_lb[2] - momentum_tauMu[2] * vector_plane_lb[0]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[1]
+        di_y_dp_k_mu_mom_z = ((vector_plane_lb[1] * ordinate[0] - vector_plane_lb[0] * ordinate[1]) - (
+                (momentum_tauMu[1] * vector_plane_lb[0] - momentum_tauMu[0] * vector_plane_lb[1]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[1]
+        di_z_dp_k_mu_mom_x = ((vector_plane_lb[2] * ordinate[1] - vector_plane_lb[1] * ordinate[2]) - (
+                (momentum_tauMu[2] * vector_plane_lb[1] - momentum_tauMu[1] * vector_plane_lb[2]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[2]
+        di_z_dp_k_mu_mom_y = ((vector_plane_lb[0] * ordinate[2] - vector_plane_lb[2] * ordinate[0]) - (
+                (momentum_tauMu[0] * vector_plane_lb[2] - momentum_tauMu[2] * vector_plane_lb[0]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[2]
+        di_z_dp_k_mu_mom_z = ((vector_plane_lb[1] * ordinate[0] - vector_plane_lb[0] * ordinate[1]) - (
+                (momentum_tauMu[1] * vector_plane_lb[0] - momentum_tauMu[0] * vector_plane_lb[1]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[2]
+        ###
+        dt_x_dp_k_mu_mom_x = (unit_l[0] / np.tan(angle)) * (2 * pkmu_vector[0] - 2 / np.linalg.norm(vector_plane_lb) * (
+                vector_plane_lb[0] * np.linalg.norm(pkmu_vector) + np.dot(vector_plane_lb, pkmu_vector) *
+                pkmu_vector[0] / np.linalg.norm(pkmu_vector)) + 2 * np.dot(pkmu_vector, vector_plane_lb) *
+                                                            vector_plane_lb[0] / np.linalg.norm(
+                    vector_plane_lb) ** 2) / p_transverse * 0.5 + \
+                             (unit_l[0] * p_transverse) / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                                     1 / np.sqrt(1 - angle_content ** 2)) * ((vector_plane_lb[0] * di_x_dp_k_mu_mom_x +
+                                                                              vector_plane_lb[1] * di_y_dp_k_mu_mom_x +
+                                                                              vector_plane_lb[
+                                                                                  2] * di_z_dp_k_mu_mom_x) * np.linalg.norm(
+            tau_vector) * np.linalg.norm(vector_plane_lb) - np.dot(tau_vector, vector_plane_lb) * np.linalg.norm(
+            vector_plane_lb) * (tau_vector[0] * di_x_dp_k_mu_mom_x + tau_vector[1] * di_y_dp_k_mu_mom_x + tau_vector[
+            2] * di_z_dp_k_mu_mom_x) / np.linalg.norm(tau_vector)) / bottom_content ** 2 + \
+                             1 - \
+                             ((2 * pkmu_vector[0] * vector_plane_lb[0] + pkmu_vector[1] * vector_plane_lb[1] +
+                               pkmu_vector[2] * vector_plane_lb[2]) * np.linalg.norm(vector_plane_lb) * np.linalg.norm(
+                                 pkmu_vector) - (np.dot(pkmu_vector, vector_plane_lb) * pkmu_vector[0] * np.linalg.norm(
+                                 vector_plane_lb) * pkmu_vector[0] / np.linalg.norm(pkmu_vector))) / (
+                                         np.linalg.norm(pkmu_vector) * np.linalg.norm(vector_plane_lb)) ** 2
+
+        dt_x_dp_k_mu_mom_y = (unit_l[0] / np.tan(angle)) * (2 * pkmu_vector[1] - 2 / np.linalg.norm(vector_plane_lb) * (
+                vector_plane_lb[1] * np.linalg.norm(pkmu_vector) + np.dot(vector_plane_lb, pkmu_vector) *
+                pkmu_vector[1] / np.linalg.norm(pkmu_vector)) + 2 * np.dot(pkmu_vector, vector_plane_lb) *
+                                                            vector_plane_lb[1] / np.linalg.norm(
+                    vector_plane_lb) ** 2) / p_transverse * 0.5 + \
+                             (unit_l[0] * p_transverse) / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                                     1 / np.sqrt(1 - angle_content ** 2)) * ((vector_plane_lb[0] * di_x_dp_k_mu_mom_y +
+                                                                              vector_plane_lb[1] * di_y_dp_k_mu_mom_y +
+                                                                              vector_plane_lb[
+                                                                                  2] * di_z_dp_k_mu_mom_y) * np.linalg.norm(
+            tau_vector) * np.linalg.norm(vector_plane_lb) - np.dot(tau_vector, vector_plane_lb) * np.linalg.norm(
+            vector_plane_lb) * (tau_vector[0] * di_x_dp_k_mu_mom_y + tau_vector[1] * di_y_dp_k_mu_mom_y + tau_vector[
+            2] * di_z_dp_k_mu_mom_y) / np.linalg.norm(tau_vector)) / bottom_content ** 2 + \
+                             ((pkmu_vector[0] * vector_plane_lb[1]) * np.linalg.norm(vector_plane_lb) * np.linalg.norm(
+                                 pkmu_vector) - (np.dot(pkmu_vector, vector_plane_lb) * pkmu_vector[0] * np.linalg.norm(
+                                 vector_plane_lb) * pkmu_vector[1] / np.linalg.norm(pkmu_vector))) / (
+                                         np.linalg.norm(pkmu_vector) * np.linalg.norm(vector_plane_lb)) ** 2
+        dt_x_dp_k_mu_mom_z = (unit_l[0] / np.tan(angle)) * (2 * pkmu_vector[2] - 2 / np.linalg.norm(vector_plane_lb) * (
+                vector_plane_lb[2] * np.linalg.norm(pkmu_vector) + np.dot(vector_plane_lb, pkmu_vector) *
+                pkmu_vector[2] / np.linalg.norm(pkmu_vector)) + 2 * np.dot(pkmu_vector, vector_plane_lb) *
+                                                            vector_plane_lb[2] / np.linalg.norm(
+                    vector_plane_lb) ** 2) / p_transverse * 0.5 + \
+                             (unit_l[0] * p_transverse) / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                                     1 / np.sqrt(1 - angle_content ** 2)) * ((vector_plane_lb[0] * di_x_dp_k_mu_mom_z +
+                                                                              vector_plane_lb[1] * di_y_dp_k_mu_mom_z +
+                                                                              vector_plane_lb[
+                                                                                  2] * di_z_dp_k_mu_mom_z) * np.linalg.norm(
+            tau_vector) * np.linalg.norm(vector_plane_lb) - np.dot(tau_vector, vector_plane_lb) * np.linalg.norm(
+            vector_plane_lb) * (tau_vector[0] * di_x_dp_k_mu_mom_z + tau_vector[1] * di_y_dp_k_mu_mom_z + tau_vector[
+            2] * di_z_dp_k_mu_mom_z) / np.linalg.norm(tau_vector)) / bottom_content ** 2 + \
+                             ((pkmu_vector[0] * vector_plane_lb[2]) * np.linalg.norm(vector_plane_lb) * np.linalg.norm(
+                                 pkmu_vector) - (np.dot(pkmu_vector, vector_plane_lb) * pkmu_vector[0] * np.linalg.norm(
+                                 vector_plane_lb) * pkmu_vector[2] / np.linalg.norm(pkmu_vector))) / (
+                                         np.linalg.norm(pkmu_vector) * np.linalg.norm(vector_plane_lb)) ** 2
+        ###
+        di_x_d_vector_lb_x = ((vector_with_mu1[1] * ordinate[2] - vector_with_mu1[2] * ordinate[1]) - (
+                (momentum_tauMu[1] * vector_with_mu1[2] - momentum_tauMu[2] * vector_with_mu1[1]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[0]
+        di_x_d_vector_lb_y = ((vector_with_mu1[2] * ordinate[0] - vector_with_mu1[0] * ordinate[2]) - (
+                (momentum_tauMu[2] * vector_with_mu1[0] - momentum_tauMu[0] * vector_with_mu1[2]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[0]
+        di_x_d_vector_lb_z = ((vector_with_mu1[0] * ordinate[1] - vector_with_mu1[1] * ordinate[0]) - (
+                (momentum_tauMu[0] * vector_with_mu1[1] - momentum_tauMu[1] * vector_with_mu1[0]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[0]
+        di_y_d_vector_lb_x = ((vector_with_mu1[1] * ordinate[2] - vector_with_mu1[2] * ordinate[1]) - (
+                (momentum_tauMu[1] * vector_with_mu1[2] - momentum_tauMu[2] * vector_with_mu1[1]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[1]
+        di_y_d_vector_lb_y = ((vector_with_mu1[2] * ordinate[0] - vector_with_mu1[0] * ordinate[2]) - (
+                (momentum_tauMu[2] * vector_with_mu1[0] - momentum_tauMu[0] * vector_with_mu1[2]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[1]
+        di_y_d_vector_lb_z = ((vector_with_mu1[0] * ordinate[1] - vector_with_mu1[1] * ordinate[0]) - (
+                (momentum_tauMu[0] * vector_with_mu1[1] - momentum_tauMu[1] * vector_with_mu1[0]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[1]
+        di_z_d_vector_lb_x = ((vector_with_mu1[1] * ordinate[2] - vector_with_mu1[2] * ordinate[1]) - (
+                (momentum_tauMu[1] * vector_with_mu1[2] - momentum_tauMu[2] * vector_with_mu1[1]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[2]
+        di_z_d_vector_lb_y = ((vector_with_mu1[2] * ordinate[0] - vector_with_mu1[0] * ordinate[2]) - (
+                (momentum_tauMu[2] * vector_with_mu1[0] - momentum_tauMu[0] * vector_with_mu1[2]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[2]
+        di_z_d_vector_lb_z = ((vector_with_mu1[0] * ordinate[1] - vector_with_mu1[1] * ordinate[0]) - (
+                (momentum_tauMu[0] * vector_with_mu1[1] - momentum_tauMu[1] * vector_with_mu1[0]
+                 ) * possible_calculation_u)) / determinant * momentum_tauMu[2]
+        ###
+        dt_x_d_vector_lb_x = p_transverse / np.tan(angle) / np.linalg.norm(vector_plane_lb) + \
+                             p_transverse / np.tan(angle) * vector_plane_lb[0] * (
+                                     -vector_plane_lb[0] / np.linalg.norm(vector_plane_lb) ** 3) + \
+                             (p_transverse * unit_l[0]) * 1 / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                                     1 / np.sqrt(1 - angle_content ** 2)) * (
+                                     (tau_vector[0] + vector_plane_lb[0] * di_x_d_vector_lb_x + vector_plane_lb[
+                                         1] * di_y_d_vector_lb_x + vector_plane_lb[
+                                          2] * di_z_d_vector_lb_x) * bottom_content - np.dot(tau_vector,
+                                                                                             vector_plane_lb) * (
+                                             np.linalg.norm(
+                                                 tau_vector) * vector_plane_lb[0] / np.linalg.norm(
+                                         vector_plane_lb) + np.linalg.norm(vector_plane_lb) * (
+                                                     tau_vector[0] * di_x_d_vector_lb_x + tau_vector[
+                                                 1] * di_y_d_vector_lb_x + tau_vector[
+                                                         2] * di_z_d_vector_lb_x) / np.linalg.norm(
+                                         tau_vector))) / bottom_content ** 2 + \
+                             (unit_l[0] / np.tan(angle)) * (-2 * np.linalg.norm(pkmu_vector) * (
+                pkmu_vector[0] * np.linalg.norm(vector_plane_lb) - vector_plane_lb[0] * np.dot(pkmu_vector,
+                                                                                               vector_plane_lb) / np.linalg.norm(
+            vector_plane_lb)) / (np.linalg.norm(vector_plane_lb) ** 2) + (2 * pkmu_vector[0] * np.dot(pkmu_vector,
+                                                                                                      vector_plane_lb) * np.linalg.norm(
+            vector_plane_lb) ** 2 - 2 * vector_plane_lb[0] * (np.dot(pkmu_vector,
+                                                                     vector_plane_lb)) ** 2) / np.linalg.norm(
+            vector_plane_lb) ** 4) / p_transverse * 0.5 + \
+                             0 - \
+                             pkmu_vector[0] / np.linalg.norm(pkmu_vector) * \
+                             (pkmu_vector[0] * np.linalg.norm(vector_plane_lb) - np.dot(vector_plane_lb, pkmu_vector) *
+                              vector_plane_lb[0] / np.linalg.norm(vector_plane_lb)) / np.linalg.norm(
+            vector_plane_lb) ** 2
+
+        dt_x_d_vector_lb_y = p_transverse / np.tan(angle) * vector_plane_lb[0] * (
+                -vector_plane_lb[1] / np.linalg.norm(vector_plane_lb) ** 3) + \
+                             (p_transverse * unit_l[0]) * 1 / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                                     1 / np.sqrt(1 - angle_content ** 2)) * (
+                                     (vector_plane_lb[0] * di_x_d_vector_lb_y + tau_vector[1] + vector_plane_lb[
+                                         1] * di_y_d_vector_lb_y + vector_plane_lb[
+                                          2] * di_z_d_vector_lb_y) * bottom_content - np.dot(tau_vector,
+                                                                                             vector_plane_lb) * (
+                                             np.linalg.norm(
+                                                 tau_vector) * vector_plane_lb[1] / np.linalg.norm(
+                                         vector_plane_lb) + np.linalg.norm(vector_plane_lb) * (
+                                                     tau_vector[0] * di_x_d_vector_lb_y + tau_vector[
+                                                 1] * di_y_d_vector_lb_y + tau_vector[
+                                                         2] * di_z_d_vector_lb_y) / np.linalg.norm(
+                                         tau_vector))) / bottom_content ** 2 + \
+                             (unit_l[0] / np.tan(angle)) * (-2 * np.linalg.norm(pkmu_vector) * (
+                pkmu_vector[1] * np.linalg.norm(vector_plane_lb) - vector_plane_lb[1] * np.dot(pkmu_vector,
+                                                                                               vector_plane_lb) / np.linalg.norm(
+            vector_plane_lb)) / (np.linalg.norm(vector_plane_lb) ** 2) + (2 * pkmu_vector[1] * np.dot(pkmu_vector,
+                                                                                                      vector_plane_lb) * np.linalg.norm(
+            vector_plane_lb) ** 2 - 2 * vector_plane_lb[1] * (np.dot(pkmu_vector,
+                                                                     vector_plane_lb)) ** 2) / np.linalg.norm(
+            vector_plane_lb) ** 4) / p_transverse * 0.5 + \
+                             0 - \
+                             pkmu_vector[0] / np.linalg.norm(pkmu_vector) * \
+                             (pkmu_vector[1] * np.linalg.norm(vector_plane_lb) - np.dot(vector_plane_lb, pkmu_vector) *
+                              vector_plane_lb[1] / np.linalg.norm(vector_plane_lb)) / np.linalg.norm(
+            vector_plane_lb) ** 2
+        dt_x_d_vector_lb_z = p_transverse / np.tan(angle) * vector_plane_lb[0] * (
+                -vector_plane_lb[2] / np.linalg.norm(vector_plane_lb) ** 3) + \
+                             (p_transverse * unit_l[0]) * 1 / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                                     1 / np.sqrt(1 - angle_content ** 2)) * (
+                                     (vector_plane_lb[0] * di_x_d_vector_lb_z + vector_plane_lb[
+                                         1] * di_y_d_vector_lb_z + tau_vector[2] + vector_plane_lb[
+                                          2] * di_z_d_vector_lb_z) * bottom_content - np.dot(tau_vector,
+                                                                                             vector_plane_lb) * (
+                                             np.linalg.norm(
+                                                 tau_vector) * vector_plane_lb[2] / np.linalg.norm(
+                                         vector_plane_lb) + np.linalg.norm(vector_plane_lb) * (
+                                                     tau_vector[0] * di_x_d_vector_lb_z + tau_vector[
+                                                 1] * di_y_d_vector_lb_z + tau_vector[
+                                                         2] * di_z_d_vector_lb_z) / np.linalg.norm(
+                                         tau_vector))) / bottom_content ** 2 + \
+                             (unit_l[0] / np.tan(angle)) * (-2 * np.linalg.norm(pkmu_vector) * (
+                pkmu_vector[2] * np.linalg.norm(vector_plane_lb) - vector_plane_lb[2] * np.dot(pkmu_vector,
+                                                                                               vector_plane_lb) / np.linalg.norm(
+            vector_plane_lb)) / (np.linalg.norm(vector_plane_lb) ** 2) + (2 * pkmu_vector[2] * np.dot(pkmu_vector,
+                                                                                                      vector_plane_lb) * np.linalg.norm(
+            vector_plane_lb) ** 2 - 2 * vector_plane_lb[2] * (np.dot(pkmu_vector,
+                                                                     vector_plane_lb)) ** 2) / np.linalg.norm(
+            vector_plane_lb) ** 4) / p_transverse * 0.5 + \
+                             0 - \
+                             pkmu_vector[0] / np.linalg.norm(pkmu_vector) * \
+                             (pkmu_vector[2] * np.linalg.norm(vector_plane_lb) - np.dot(vector_plane_lb, pkmu_vector) *
+                              vector_plane_lb[2] / np.linalg.norm(vector_plane_lb)) / np.linalg.norm(
+            vector_plane_lb) ** 2
+        ###
+        di_x_d_tau_mom_x = -(2 * vector_with_mu1[1] * vector_plane_lb[2] - 2 * vector_plane_lb[1] * vector_with_mu1[
+            2]) * possible_calculation_u / determinant * momentum_tauMu[0]
+        di_x_d_tau_mom_y = -(vector_with_mu1[2] * vector_plane_lb[0] - vector_plane_lb[2] * vector_with_mu1[
+            0]) * possible_calculation_u / determinant * momentum_tauMu[0]
+        di_x_d_tau_mom_z = -(vector_with_mu1[0] * vector_plane_lb[1] - vector_plane_lb[0] * vector_with_mu1[
+            1]) * possible_calculation_u / determinant * momentum_tauMu[0]
+        di_y_d_tau_mom_x = -(vector_with_mu1[1] * vector_plane_lb[2] - vector_plane_lb[1] * vector_with_mu1[
+            2]) * possible_calculation_u / determinant * momentum_tauMu[1]
+        di_y_d_tau_mom_y = -(2 * vector_with_mu1[2] * vector_plane_lb[0] - 2 * vector_plane_lb[2] * vector_with_mu1[
+            0]) * possible_calculation_u / determinant * momentum_tauMu[1]
+        di_y_d_tau_mom_z = -(vector_with_mu1[0] * vector_plane_lb[1] - vector_plane_lb[0] * vector_with_mu1[
+            1]) * possible_calculation_u / determinant * momentum_tauMu[1]
+        di_z_d_tau_mom_x = -(vector_with_mu1[1] * vector_plane_lb[2] - vector_plane_lb[1] * vector_with_mu1[
+            2]) * possible_calculation_u / determinant * momentum_tauMu[2]
+        di_z_d_tau_mom_y = -(vector_with_mu1[2] * vector_plane_lb[0] - vector_plane_lb[2] * vector_with_mu1[
+            0]) * possible_calculation_u / determinant * momentum_tauMu[2]
+        di_z_d_tau_mom_z = -(2 * vector_with_mu1[0] * vector_plane_lb[1] - 2 * vector_plane_lb[0] * vector_with_mu1[
+            1]) * possible_calculation_u / determinant * momentum_tauMu[2]
+        ###
+        dt_x_d_tau_mom_x = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * (
+                                   (di_x_d_tau_mom_x * vector_plane_lb[0] + di_y_d_tau_mom_x * vector_plane_lb[
+                                       1] + di_z_d_tau_mom_x *
+                                    vector_plane_lb[2]) * bottom_content - np.dot(vector_plane_lb,
+                                                                                  tau_vector) * np.linalg.norm(
+                               vector_plane_lb) * (tau_vector[0] * di_x_d_tau_mom_x + tau_vector[1] * di_y_d_tau_mom_x +
+                                                   tau_vector[2] * di_z_d_tau_mom_x) / np.linalg.norm(
+                               tau_vector)) / bottom_content ** 2
+        dt_x_d_tau_mom_y = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * ((di_x_d_tau_mom_y * vector_plane_lb[
+            0] + di_y_d_tau_mom_y * vector_plane_lb[1] + di_z_d_tau_mom_y * vector_plane_lb[2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * di_x_d_tau_mom_y + tau_vector[1] * di_y_d_tau_mom_y +
+                                        tau_vector[2] * di_z_d_tau_mom_y) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+        dt_x_d_tau_mom_z = p_transverse * unit_l[0] / (np.tan(angle)) ** 2 * 1 / (np.cos(angle)) ** 2 * (
+                1 / np.sqrt(1 - angle_content ** 2)) * ((di_x_d_tau_mom_z * vector_plane_lb[
+            0] + di_y_d_tau_mom_z * vector_plane_lb[1] + di_z_d_tau_mom_z * vector_plane_lb[2]) * bottom_content -
+                                                        np.dot(vector_plane_lb, tau_vector) * np.linalg.norm(
+                    vector_plane_lb) * (tau_vector[0] * di_x_d_tau_mom_z + tau_vector[1] * di_y_d_tau_mom_z +
+                                        tau_vector[2] * di_z_d_tau_mom_z) / np.linalg.norm(
+                    tau_vector)) / bottom_content ** 2
+        sigma_tau_x = np.sqrt(dt_x_dp_k_mu_ref_x ** 2 * data_frame['pKmu_REFP_COVXX'][i] +
+                              dt_x_dp_k_mu_ref_y ** 2 * data_frame['pKmu_REFP_COVYY'][i] +
+                              dt_x_dp_k_mu_ref_z ** 2 * data_frame['pKmu_REFP_COVZZ'][i] +
+                              dt_x_d_tau_ref_x ** 2 * data_frame['tauMu_REFP_COVXX'][i] +
+                              dt_x_d_tau_ref_y ** 2 * data_frame['tauMu_REFP_COVYY'][i] +
+                              dt_x_d_tau_ref_z ** 2 * data_frame['tauMu_REFP_COVZZ'][i] +
+                              dt_x_d_vector_lb_x ** 2 * data_frame['pKmu_REFP_COVXX'][i] +
+                              dt_x_d_vector_lb_y ** 2 * data_frame['pKmu_REFP_COVYY'][i] +
+                              dt_x_d_vector_lb_z ** 2 * data_frame['pKmu_REFP_COVZZ'][i] +
+                              dt_x_d_vector_lb_x ** 2 * data_frame['Lb_OWNPV_XERR'][i] ** 2 +
+                              dt_x_d_vector_lb_y ** 2 * data_frame['Lb_OWNPV_YERR'][i] ** 2 +
+                              dt_x_d_vector_lb_z ** 2 * data_frame['Lb_OWNPV_ZERR'][i] ** 2 +
+                              dt_x_dp_k_mu_mom_x ** 2 * data_frame['pKmu_P_COVXX'][i] +
+                              dt_x_dp_k_mu_mom_y ** 2 * data_frame['pKmu_P_COVYY'][i] +
+                              dt_x_dp_k_mu_mom_z ** 2 * data_frame['pKmu_P_COVZZ'][i] +
+                              dt_x_d_tau_mom_x ** 2 * data_frame['tauMu_P_COVXX'][i] +
+                              dt_x_d_tau_mom_y ** 2 * data_frame['tauMu_P_COVYY'][i] +
+                              dt_x_d_tau_mom_z ** 2 * data_frame['tauMu_P_COVZZ'][i] +
+                              2 * dt_x_dp_k_mu_mom_x * dt_x_dp_k_mu_ref_x * data_frame['pKmu_P_REFP_COV_PX_X'][i] +
+                              2 * dt_x_dp_k_mu_mom_x * dt_x_dp_k_mu_ref_y * data_frame['pKmu_P_REFP_COV_PX_Y'][i] +
+                              2 * dt_x_dp_k_mu_mom_x * dt_x_dp_k_mu_ref_z * data_frame['pKmu_P_REFP_COV_PX_Z'][i] +
+                              2 * dt_x_dp_k_mu_mom_y * dt_x_dp_k_mu_ref_x * data_frame['pKmu_P_REFP_COV_PY_X'][i] +
+                              2 * dt_x_dp_k_mu_mom_y * dt_x_dp_k_mu_ref_y * data_frame['pKmu_P_REFP_COV_PY_Y'][i] +
+                              2 * dt_x_dp_k_mu_mom_y * dt_x_dp_k_mu_ref_z * data_frame['pKmu_P_REFP_COV_PY_Z'][i] +
+                              2 * dt_x_dp_k_mu_mom_z * dt_x_dp_k_mu_ref_x * data_frame['pKmu_P_REFP_COV_PZ_X'][i] +
+                              2 * dt_x_dp_k_mu_mom_z * dt_x_dp_k_mu_ref_y * data_frame['pKmu_P_REFP_COV_PZ_Y'][i] +
+                              2 * dt_x_dp_k_mu_mom_z * dt_x_dp_k_mu_ref_z * data_frame['pKmu_P_REFP_COV_PZ_Z'][i] +
+                              2 * dt_x_d_tau_mom_x * dt_x_d_tau_ref_x * data_frame['tauMu_P_REFP_COV_PX_X'][i] +
+                              2 * dt_x_d_tau_mom_x * dt_x_d_tau_ref_y * data_frame['tauMu_P_REFP_COV_PX_Y'][i] +
+                              2 * dt_x_d_tau_mom_x * dt_x_d_tau_ref_z * data_frame['tauMu_P_REFP_COV_PX_Z'][i] +
+                              2 * dt_x_d_tau_mom_y * dt_x_d_tau_ref_x * data_frame['tauMu_P_REFP_COV_PY_X'][i] +
+                              2 * dt_x_d_tau_mom_y * dt_x_d_tau_ref_y * data_frame['tauMu_P_REFP_COV_PY_Y'][i] +
+                              2 * dt_x_d_tau_mom_y * dt_x_d_tau_ref_z * data_frame['tauMu_P_REFP_COV_PY_Z'][i] +
+                              2 * dt_x_d_tau_mom_z * dt_x_d_tau_ref_x * data_frame['tauMu_P_REFP_COV_PZ_X'][i] +
+                              2 * dt_x_d_tau_mom_z * dt_x_d_tau_ref_y * data_frame['tauMu_P_REFP_COV_PZ_Y'][i] +
+                              2 * dt_x_d_tau_mom_z * dt_x_d_tau_ref_z * data_frame['tauMu_P_REFP_COV_PZ_Z'][i] +
+                              2 * dt_x_d_vector_lb_x * dt_x_dp_k_mu_mom_x * data_frame['pKmu_P_REFP_COV_PX_X'][i] +
+                              2 * dt_x_d_vector_lb_x * dt_x_dp_k_mu_mom_y * data_frame['pKmu_P_REFP_COV_PY_X'][i] +
+                              2 * dt_x_d_vector_lb_x * dt_x_dp_k_mu_mom_z * data_frame['pKmu_P_REFP_COV_PZ_X'][i] +
+                              2 * dt_x_d_vector_lb_y * dt_x_dp_k_mu_mom_x * data_frame['pKmu_P_REFP_COV_PX_Y'][i] +
+                              2 * dt_x_d_vector_lb_y * dt_x_dp_k_mu_mom_y * data_frame['pKmu_P_REFP_COV_PY_Y'][i] +
+                              2 * dt_x_d_vector_lb_y * dt_x_dp_k_mu_mom_z * data_frame['pKmu_P_REFP_COV_PZ_Y'][i] +
+                              2 * dt_x_d_vector_lb_z * dt_x_dp_k_mu_mom_x * data_frame['pKmu_P_REFP_COV_PX_Z'][i] +
+                              2 * dt_x_d_vector_lb_z * dt_x_dp_k_mu_mom_y * data_frame['pKmu_P_REFP_COV_PY_Z'][i] +
+                              2 * dt_x_d_vector_lb_z * dt_x_dp_k_mu_mom_z * data_frame['pKmu_P_REFP_COV_PZ_Z'][i] +
+                              2 * dt_x_d_vector_lb_x * dt_x_dp_k_mu_ref_x * data_frame['pKmu_REFP_COVXX'][i] +
+                              2 * dt_x_d_vector_lb_x * dt_x_dp_k_mu_ref_y * data_frame['pKmu_REFP_COVXY'][i] +
+                              2 * dt_x_d_vector_lb_x * dt_x_dp_k_mu_ref_z * data_frame['pKmu_REFP_COVXZ'][i] +
+                              2 * dt_x_d_vector_lb_y * dt_x_dp_k_mu_ref_x * data_frame['pKmu_REFP_COVXY'][i] +
+                              2 * dt_x_d_vector_lb_y * dt_x_dp_k_mu_ref_y * data_frame['pKmu_REFP_COVYY'][i] +
+                              2 * dt_x_d_vector_lb_y * dt_x_dp_k_mu_ref_z * data_frame['pKmu_REFP_COVYZ'][i] +
+                              2 * dt_x_d_vector_lb_z * dt_x_dp_k_mu_ref_x * data_frame['pKmu_REFP_COVXZ'][i] +
+                              2 * dt_x_d_vector_lb_z * dt_x_dp_k_mu_ref_y * data_frame['pKmu_REFP_COVYZ'][i] +
+                              2 * dt_x_d_vector_lb_z * dt_x_dp_k_mu_ref_z * data_frame['pKmu_REFP_COVZZ'][i])
+        print(tau_mom, sigma_tau_x, dt_x_dp_k_mu_ref_x, dt_x_dp_k_mu_ref_y, dt_x_dp_k_mu_ref_z)
+        print(dt_x_d_tau_ref_x, dt_x_d_tau_ref_y, dt_x_d_tau_ref_z)
+        print(dt_x_d_tau_mom_x, dt_x_d_tau_mom_y, dt_x_d_tau_mom_z)
+        print(dt_x_d_vector_lb_x, dt_x_d_vector_lb_y, dt_x_d_vector_lb_z)
+        print(dt_x_dp_k_mu_mom_x, dt_x_dp_k_mu_mom_y, dt_x_dp_k_mu_mom_z)
         tau_p_x.append(tau_mom[0])
         tau_p_y.append(tau_mom[1])
         tau_p_z.append(tau_mom[2])
         tau_p.append(np.linalg.norm(tau_mom))
+
     data_frame['tau_PX'] = tau_p_x
     data_frame['tau_PY'] = tau_p_y
     data_frame['tau_PZ'] = tau_p_z
