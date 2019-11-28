@@ -5,8 +5,10 @@ import numpy as np
 def load_data(columns, year=2016):
     columns = set(columns)
     # file = uproot.open(f"merge_{year}.root")
-    file = uproot.open(f"lb_test.root")
-    events = file['LbTuple/DecayTree']
+    # file = uproot.open(f"lb_test.root")
+    file = uproot.open(f"Lb2pKmumu_2018_MagUp.root")
+    # events = file['LbTuple/DecayTree']
+    events = file['DecayTree']
     print(events.show())
     events_frame = events.pandas.df(columns)
     print(events_frame.index)
@@ -45,7 +47,6 @@ def add_branches():
 
     error_pkmu_ref = ['pKmu_REFP_COVXX', 'pKmu_REFP_COVYY', 'pKmu_REFP_COVZZ', 'pKmu_REFP_COVXY', 'pKmu_REFP_COVXZ',
                       'pKmu_REFP_COVYZ']
-    # TODO what is pKmu_P_COVEE
     error_taumu = ['tauMu_REFP_COVXX', 'tauMu_REFP_COVYY', 'tauMu_REFP_COVZZ', 'tauMu_REFP_COVXY', 'tauMu_REFP_COVXZ',
                    'tauMu_REFP_COVYZ']
     p_ref_cov = [x + '_P_REFP_COV_P' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters
@@ -54,8 +55,12 @@ def add_branches():
     p_cov = [x + '_P_COV' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters in
              ['XX', 'YY', 'ZZ', 'XY', 'XZ', 'YZ']]
     errors = error_pkmu_ref + error_taumu + p_cov + p_ref_cov
+    chi_squared = ['pKmu_OWNPV_CHI2', 'mu1_isMuon']
+    impact_parameter = ['proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV']
+    pid = ['proton_PIDe', 'Kminus_PIDe']
     return lb + bdt_isolation + cleaning + proton + kminus + mu1 + mu2 + primary + end_vertex + [
-        "Lb_PE", "Lb_PX", "Lb_PY", "Lb_PZ", "Lb_P"] + pkmu + ref_point + errors
+        "Lb_PE", "Lb_PX", "Lb_PY", "Lb_PZ", "Lb_P"] + pkmu + ref_point + errors + ['pKmu_ENDVERTEX_CHI2',
+                                                                                   'pKmu_IPCHI2_OWNPV'] + chi_squared + impact_parameter + pid
 
 
 def check_for_both_charges(data_frame):
@@ -68,7 +73,7 @@ def check_for_both_charges(data_frame):
                 sigma = 0
                 p_x_percentage = sigma * data_frame['proton_P_COVXX'][i] / data_frame['proton_PX'][i]
                 px = (1 - p_x_percentage) * data_frame['proton_PX'][i] <= data_frame['proton_PX'][j] <= (
-                            1 + p_x_percentage) * data_frame['proton_PX'][i]
+                        1 + p_x_percentage) * data_frame['proton_PX'][i]
                 p_y_percentage = sigma * data_frame['proton_P_COVYY'][i] / data_frame['proton_PY'][i]
                 py = (1 - p_y_percentage) * data_frame['proton_PY'][i] <= data_frame['proton_PY'][j] <= (
                         1 + p_y_percentage) * data_frame['proton_PY'][i]

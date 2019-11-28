@@ -1,16 +1,17 @@
+from background_reduction import reduce_background
 from data_loader import load_data, add_branches
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from masses import masses
 
 from error_propagation import error_propagation_intersection, error_propagation_transverse_momentum, \
     error_propagation_momentum_mass
 
-masses = {'mu': 105.658, 'proton': 938.272, 'K': 493.677, 'pi': 139.57, 'Lb': 5260, 'tau': 1777}
-
 
 def retrieve_vertices(data_frame):
     all_distances, vectors, errors = [], [], []
+    print('initial length of data frame: ', len(data_frame))
     for i in range(len(data_frame)):
         ts = data_frame.loc[i]
         pv_xyz = [ts['Lb_OWNPV_X'], ts['Lb_OWNPV_Y'], ts['Lb_OWNPV_Z']]
@@ -26,12 +27,16 @@ def retrieve_vertices(data_frame):
         vectors.append(vector)
         all_distances.append(distance)
     data_frame['distances'] = all_distances
+    # compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3000)]
+    # # plt.hist(compare_data['distances'], bins=100, range=[0, 200])
+    # plt.hist(data_frame['distances'], bins=100, range=[0, 200])
+    # plt.show()
     data_frame['vectors'] = vectors
     data_frame['vectors_errors'] = errors
-    data_frame = data_frame[data_frame['distances'] > 20]  # should be changed according to what we want
-    data_frame = data_frame[(data_frame['missing_mass1'] > masses['tau'] - masses['mu'])]
-    data_frame = data_frame.drop('distances', axis=1)
-    data_frame = data_frame.reset_index()
+    data_frame = data_frame[(data_frame['distances'] > 3) & (data_frame['distances'] < 100)]  # should be changed according to what we want
+    # data_frame = data_frame.drop('distances', axis=1)
+    # data_frame = data_frame[data_frame['pKmu_IPCHI2_OWNPV'] > 9]
+    # data_frame = data_frame[data_frame['pKmu_OWNPV_CHI2'] > 9]
     return data_frame, vectors
 
 
@@ -62,14 +67,14 @@ def line_plane_intersection(data_frame):
                       vector_plane_lb[0] * vector_with_mu1[1] - vector_plane_lb[1] * vector_with_mu1[0]]]
         if np.linalg.matrix_rank(coefficient_matrix) == np.array(coefficient_matrix).shape[0]:
             ordinate = [point_tau_mu[j] - end_xyz[j] for j in range(3)]
-            possible_intersection = np.linalg.solve(coefficient_matrix, ordinate)
-            possible_calculation_s = 1 / determinant * sum([inverse_A[0][j] * ordinate[j] for j in range(3)])
-            possible_calculation_t = 1 / determinant * sum([inverse_A[1][j] * ordinate[j] for j in range(3)])
+            # possible_intersection = np.linalg.solve(coefficient_matrix, ordinate)
+            # possible_calculation_s = 1 / determinant * sum([inverse_A[0][j] * ordinate[j] for j in range(3)])
+            # possible_calculation_t = 1 / determinant * sum([inverse_A[1][j] * ordinate[j] for j in range(3)])
             possible_calculation_u = 1 / determinant * sum([inverse_A[2][j] * ordinate[j] for j in range(3)])
             # print(possible_intersection)
             # print([possible_calculation_s, possible_calculation_t, possible_calculation_u])
             possible_intersection = np.array(momentum_tauMu) * possible_calculation_u + np.array(point_tau_mu)
-            print(possible_intersection)
+            # print(possible_intersection)
             # sigma_i = error_propagation_intersection(data_frame=data_frame, inverse_A=inverse_A,
             #                                          determinant=determinant, ordinate=ordinate, i=i,
             #                                          possible_calculation_u=possible_calculation_u)
@@ -167,6 +172,11 @@ def tau_momentum_mass(data_frame):
     data_frame['tau_PY'] = tau_p_y
     data_frame['tau_PZ'] = tau_p_z
     data_frame['tau_P'] = tau_p
+    data_frame['tau_distances_travelled'] = tau_distances_travelled
+    compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3000)]
+    # plt.hist(compare_data['tau_distances_travelled'], bins=100, range=[0, 200])
+    plt.hist(data_frame['tau_distances_travelled'], bins=100, range=[0, 200])
+    plt.show()
     return data_frame
 
 
@@ -193,10 +203,10 @@ def plot_result(data_frame):
     sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
     data_frame['sum_m'] = sum_m
     # TODO add error for sum_m
-
+    print('final length of the data', len(sum_m))
     # plt.hist(sum_m, bins=50, range=[4500, 6500])
-    plt.hist(sum_m, bins=50, range=[0, 40000])
-    plt.vlines(masses['Lb'], ymin=0, ymax=25)
+    n, b, p = plt.hist(sum_m, bins=50, range=[0, 40000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
     plt.xlabel('$m_{pK\\mu\\tau}$')
     plt.ylabel('occurrences')
     plt.show()
@@ -218,6 +228,7 @@ def plot_result(data_frame):
     mom_y = sum([new_frame[i + 'Y'] for i in particles])
     mom_z = sum([new_frame[i + 'Z'] for i in particles])
     sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+
     plt.hist(sum_m, bins=50)
     # need to take cuts around those masses
     plt.xlabel('$m_{\\mu\\tau}$')
@@ -255,29 +266,11 @@ def get_missing_mass(data_frame):
     return data_frame
 
 
-def identify_p_k_j_psi(data_frame):
-    particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    particles = ['mu1_P', 'tauMu_P']
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    print(len(mom_x), len(data_frame))
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
-    plt.hist(sum_m, bins=50, range=[0, 30000])
-    plt.vlines(3097, ymin=0, ymax=20)
-    plt.vlines(3686, ymin=0, ymax=20)
-    # need to take cuts around those masses
-    plt.xlabel('$m_{pK\\mu\\mu}$')
-    plt.ylabel('occurrences')
-    plt.show()
-
-
 if __name__ == '__main__':
     a = load_data(add_branches())
-    # identify_p_k_j_psi(a)
     a.dropna(inplace=True)
-    df = get_missing_mass(a)
+    df = reduce_background(a)
+    df = get_missing_mass(df)
     df, vec = retrieve_vertices(df)
     df = get_missing_mass(df)
     df = transverse_momentum(df, vec)
