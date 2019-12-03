@@ -24,43 +24,33 @@ def add_branches():
     Returns branches needed for analysis - for now returns branches used by Matt
     :return:
     """
-    lb = ["Lb_M", "Lb_ENDVERTEX_CHI2", "Lb_DIRA_OWNPV"]
-    primary = ['Lb_OWNPV_X', 'Lb_OWNPV_Y', 'Lb_OWNPV_Z', 'Lb_OWNPV_XERR', 'Lb_OWNPV_YERR', 'Lb_OWNPV_ZERR']
+    lb = ['Lb_M', 'Lb_ENDVERTEX_CHI2', 'Lb_DIRA_OWNPV', 'Lb_M', 'Lb_FD_OWNPV', 'Lb_OWNPV_X', 'Lb_OWNPV_Y', 'Lb_OWNPV_Z',
+          'Lb_OWNPV_XERR', 'Lb_OWNPV_YERR', 'Lb_OWNPV_ZERR', 'Lb_ENDVERTEX_X', 'Lb_ENDVERTEX_Y', 'Lb_ENDVERTEX_Z',
+          'Lb_ENDVERTEX_XERR', 'Lb_ENDVERTEX_YERR', 'Lb_ENDVERTEX_ZERR', "Lb_PE", "Lb_PX", "Lb_PY", "Lb_PZ", "Lb_P"]
     pkmu = ['pKmu_P', 'pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z', 'pKmu_OWNPV_X', 'pKmu_OWNPV_Y',
             'pKmu_OWNPV_Z', 'pKmu_PE', 'pKmu_PX', 'pKmu_PY', 'pKmu_PZ']
-    end_vertex = ['Lb_ENDVERTEX_X', 'Lb_ENDVERTEX_Y', 'Lb_ENDVERTEX_Z', 'Lb_ENDVERTEX_XERR', 'Lb_ENDVERTEX_YERR',
-                  'Lb_ENDVERTEX_ZERR']
-    # final_ipchi2 = ["mu1_IPCHI2_OWNPV", "mu2_IPCHI2_OWNPV", "proton_IPCHI2_OWNPV", "Kminus_IPCHI2_OWNPV"]
-    # pid = ["Kminus_PIDK", "Kminus_PIDp", "Kminus_PIDd", "proton_PIDK", "proton_PIDp", "proton_PIDd", "Kminus_PIDmu",
-    #        "mu1_PIDK", "mu2_PIDK", "mu1_PIDmu", "mu2_PIDmu"]
-    bdt_isolation = ["Lb_pmu_ISOLATION_BDT1"]
-    # cleaning = ["proton_P", "proton_PT", "Kminus_PT", "mu1_P", "mu1_PT", "mu2_P", "mu2_PT"]
     cleaning = ["proton_P", "proton_PT", "Kminus_PT", "mu1_P", "mu1_PT", "tauMu_P", "tauMu_PT"]
     proton = ["proton_PE", "proton_PX", "proton_PY", "proton_PZ", "proton_P"]
     kminus = ["Kminus_PE", "Kminus_PX", "Kminus_PY", "Kminus_PZ", "Kminus_P"]
     mu1 = ["mu1_PE", "mu1_PX", "mu1_PY", "mu1_PZ", "mu1_P"]
-    # mu2 = ["mu2_PE", "mu2_PX", "mu2_PY", "mu2_PZ", "mu2_P"]
-    mu2 = ["tauMu_PE", "tauMu_PX", "tauMu_PY", "tauMu_PZ", "tauMu_P"]
-    # return lb + final_ipchi2 + pid + bdt_isolation + cleaning + proton + kminus + mu1 + mu2 + primary + end_vertex + [
-    #     "Lb_PE", "Lb_PX", "Lb_PY", "Lb_PZ", "Lb_P"]
-    ref_point = ['tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']
-
+    mu2 = ["tauMu_PE", "tauMu_PX", "tauMu_PY", "tauMu_PZ", "tauMu_P", 'tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']
     error_pkmu_ref = ['pKmu_REFP_COVXX', 'pKmu_REFP_COVYY', 'pKmu_REFP_COVZZ', 'pKmu_REFP_COVXY', 'pKmu_REFP_COVXZ',
                       'pKmu_REFP_COVYZ']
     error_taumu = ['tauMu_REFP_COVXX', 'tauMu_REFP_COVYY', 'tauMu_REFP_COVZZ', 'tauMu_REFP_COVXY', 'tauMu_REFP_COVXZ',
                    'tauMu_REFP_COVYZ']
     p_ref_cov = [x + '_P_REFP_COV_P' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters
-                 in
-                 ['X_X', 'Y_X', 'Y_Y', 'Z_Z', 'Y_Z', 'Z_X', 'Z_Y', 'X_Y', 'X_Z', 'Y_Z']]
+                 in ['X_X', 'Y_X', 'Y_Y', 'Z_Z', 'Y_Z', 'Z_X', 'Z_Y', 'X_Y', 'X_Z', 'Y_Z']]
     p_cov = [x + '_P_COV' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters in
              ['XX', 'YY', 'ZZ', 'XY', 'XZ', 'YZ']]
     errors = error_pkmu_ref + error_taumu + p_cov + p_ref_cov
-    chi_squared = ['pKmu_OWNPV_CHI2', 'mu1_isMuon']
-    impact_parameter = ['proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV']
-    pid = ['proton_PIDe', 'Kminus_PIDe']
-    return lb + bdt_isolation + cleaning + proton + kminus + mu1 + mu2 + primary + end_vertex + [
-        "Lb_PE", "Lb_PX", "Lb_PY", "Lb_PZ", "Lb_P"] + pkmu + ref_point + errors + ['pKmu_ENDVERTEX_CHI2',
-                                                                                   'pKmu_IPCHI2_OWNPV'] + chi_squared + impact_parameter + pid
+    chi_squared = ['pKmu_OWNPV_CHI2', 'mu1_isMuon', 'pKmu_ENDVERTEX_CHI2']
+    impact_parameter = ['proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV',
+                        'pKmu_IPCHI2_OWNPV']
+    pid = ['proton_PIDe', 'Kminus_PIDe', 'Kminus_PIDK', 'Kminus_PIDmu', 'proton_PIDK', 'proton_PIDp', 'proton_PIDmu',
+           'proton_PIDp', 'Kminus_PIDK', 'mu1_PIDmu', 'tauMu_PIDmu', 'proton_PIDK', 'proton_PIDmu',
+           'Kminus_PIDp', 'Kminus_PIDmu', 'mu1_PIDp', 'mu1_PIDK', 'tauMu_PIDp', 'tauMu_PIDK']
+    bdt = ['Lb_pmu_ISOLATION_BDT1']
+    return lb + cleaning + proton + kminus + mu1 + mu2 + pkmu + errors + chi_squared + impact_parameter + pid + bdt
 
 
 def check_for_both_charges(data_frame):

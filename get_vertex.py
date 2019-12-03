@@ -28,15 +28,18 @@ def retrieve_vertices(data_frame):
         all_distances.append(distance)
     data_frame['distances'] = all_distances
     # compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3000)]
-    # # plt.hist(compare_data['distances'], bins=100, range=[0, 200])
-    # plt.hist(data_frame['distances'], bins=100, range=[0, 200])
+    # plt.hist(compare_data['distances'], bins=100, range=[0, 100])
+    # plt.show()
+    # plt.hist(data_frame['distances'], bins=100, range=[0, 100])
+    # plt.title('Distances travelled by the Lb')
     # plt.show()
     data_frame['vectors'] = vectors
     data_frame['vectors_errors'] = errors
-    data_frame = data_frame[(data_frame['distances'] > 3) & (data_frame['distances'] < 100)]  # should be changed according to what we want
+    # data_frame = data_frame[(data_frame['distances'] > 3) & (data_frame['distances'] < 100)]  # should be changed according to what we want
     # data_frame = data_frame.drop('distances', axis=1)
     # data_frame = data_frame[data_frame['pKmu_IPCHI2_OWNPV'] > 9]
     # data_frame = data_frame[data_frame['pKmu_OWNPV_CHI2'] > 9]
+    data_frame = data_frame.reset_index(drop=True)
     return data_frame, vectors
 
 
@@ -91,7 +94,7 @@ def line_plane_intersection(data_frame):
     data_frame['muon_from_tau'] = muon_from_tau
     data_frame['tau_decay_point'] = intersections
     data_frame = data_frame[data_frame['muon_from_tau'] > 0]
-    data_frame = data_frame.reset_index()
+    data_frame = data_frame.reset_index(drop=True)
     return data_frame
 
 
@@ -175,7 +178,8 @@ def tau_momentum_mass(data_frame):
     data_frame['tau_distances_travelled'] = tau_distances_travelled
     compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3000)]
     # plt.hist(compare_data['tau_distances_travelled'], bins=100, range=[0, 200])
-    plt.hist(data_frame['tau_distances_travelled'], bins=100, range=[0, 200])
+    plt.hist(data_frame['tau_distances_travelled'], bins=100, range=[0, 30])
+    plt.title('Distance travelled by the "taus"')
     plt.show()
     return data_frame
 
@@ -192,7 +196,7 @@ def momentum(frame_array):
 
 def plot_result(data_frame):
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
-    # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'tau']]
+    # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
     particles = ['Kminus_P', 'proton_P', 'mu1_P', 'tau_P']
     # particles = ['Kminus_P', 'proton_P', 'mu1_P', 'tauMu_P']
     energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
@@ -205,7 +209,8 @@ def plot_result(data_frame):
     # TODO add error for sum_m
     print('final length of the data', len(sum_m))
     # plt.hist(sum_m, bins=50, range=[4500, 6500])
-    n, b, p = plt.hist(sum_m, bins=50, range=[0, 40000])
+    n, b, p = plt.hist(sum_m, bins=60, range=[4000, 10000])
+    # n, b, p = plt.hist(data_frame['Lb_M'], bins=100, range=[0, 10000])
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
     plt.xlabel('$m_{pK\\mu\\tau}$')
     plt.ylabel('occurrences')
@@ -261,8 +266,18 @@ def get_missing_mass(data_frame):
     missing_mass1 = masses['Lb'] - np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
     print(missing_mass1.describe())
     data_frame['missing_mass1'] = missing_mass1
-    # plt.hist(missing_mass1, bins=1000)
-    # plt.show()
+    return data_frame
+
+
+def get_dimuon_mass(data_frame):
+    particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    particles = ['mu1_P', 'tauMu_P']
+    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
+    mom_x = sum([data_frame[i + 'X'] for i in particles])
+    mom_y = sum([data_frame[i + 'Y'] for i in particles])
+    mom_z = sum([data_frame[i + 'Z'] for i in particles])
+    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+    data_frame['dimuon_mass'] = sum_m
     return data_frame
 
 
@@ -270,6 +285,7 @@ if __name__ == '__main__':
     a = load_data(add_branches())
     a.dropna(inplace=True)
     df = reduce_background(a)
+    df = get_dimuon_mass(df)
     df = get_missing_mass(df)
     df, vec = retrieve_vertices(df)
     df = get_missing_mass(df)
