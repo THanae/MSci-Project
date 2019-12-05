@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from data_loader import load_data, add_branches
 from masses import masses
+from plotting_functions import plot_compare_data
 
 
 def plot_pkmu_mass(data_frame, to_plot):
@@ -27,73 +28,18 @@ def plot_pkmu_mass(data_frame, to_plot):
         plt.show()
 
         selection_range = 100
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['proton_PIDp'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('proton_PIDp jpsi')
-        axs[0, 1].hist(background_selection['proton_PIDp'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('proton_PIDp background')
-        axs[1, 0].hist(compare_data['proton_PIDp'] - compare_data['proton_PIDK'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('proton_PIDp - proton_PIDK jpsi')
-        axs[1, 1].hist(background_selection['proton_PIDp'] - background_selection['proton_PIDK'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('proton_PIDp - proton_PIDK background')
-        axs[2, 0].hist(compare_data['proton_PIDp'] - compare_data['proton_PIDmu'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('proton_PIDp - proton_PIDmu jpsi')
-        axs[2, 1].hist(background_selection['proton_PIDp'] - background_selection['proton_PIDmu'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('proton_PIDp - proton_PIDmu background')
-        plt.show()
-
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['Kminus_PIDK'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('Kminus_PIDK jpsi')
-        axs[0, 1].hist(background_selection['Kminus_PIDK'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('Kminus_PIDK background')
-        axs[1, 0].hist(compare_data['Kminus_PIDK'] - compare_data['Kminus_PIDp'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('Kminus_PIDK - Kminus_PIDp jpsi')
-        axs[1, 1].hist(background_selection['Kminus_PIDK'] - background_selection['Kminus_PIDp'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('Kminus_PIDK - Kminus_PIDp background')
-        axs[2, 0].hist(compare_data['Kminus_PIDK'] - compare_data['Kminus_PIDmu'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('Kminus_PIDK - Kminus_PIDmu jpsi')
-        axs[2, 1].hist(background_selection['Kminus_PIDK'] - background_selection['Kminus_PIDmu'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('Kminus_PIDK - Kminus_PIDmu background')
-        plt.show()
-
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['mu1_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('mu1_PIDmu jpsi')
-        axs[0, 1].hist(background_selection['mu1_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('mu1_PIDmu background')
-        axs[1, 0].hist(compare_data['mu1_PIDmu'] - compare_data['mu1_PIDp'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('mu1_PIDmu - mu1_PIDp jpsi')
-        axs[1, 1].hist(background_selection['mu1_PIDmu'] - background_selection['mu1_PIDp'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('mu1_PIDmu - mu1_PIDp background')
-        axs[2, 0].hist(compare_data['mu1_PIDmu'] - compare_data['mu1_PIDK'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('mu1_PIDmu - mu1_PIDK jpsi')
-        axs[2, 1].hist(background_selection['mu1_PIDmu'] - background_selection['mu1_PIDK'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('mu1_PIDmu - mu1_PIDK background')
-        plt.show()
-
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['tauMu_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('tauMu_PIDmu jpsi')
-        axs[0, 1].hist(background_selection['tauMu_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('tauMu_PIDmu background')
-        axs[1, 0].hist(compare_data['tauMu_PIDmu'] - compare_data['tauMu_PIDp'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('tauMu_PIDmu - tauMu_PIDp jpsi')
-        axs[1, 1].hist(background_selection['tauMu_PIDmu'] - background_selection['tauMu_PIDp'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('tauMu_PIDmu - tauMu_PIDp background')
-        axs[2, 0].hist(compare_data['tauMu_PIDmu'] - compare_data['tauMu_PIDK'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('tauMu_PIDmu - tauMu_PIDK jpsi')
-        axs[2, 1].hist(background_selection['tauMu_PIDmu'] - background_selection['tauMu_PIDK'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('tauMu_PIDmu - tauMu_PIDK background')
-        plt.show()
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['proton_PIDp', ['proton_PIDp', 'proton_PIDK'],
+                                           ['proton_PIDp', 'proton_PIDmu']], signal_name='lambda_0')
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['Kminus_PIDK', ['Kminus_PIDK', 'Kminus_PIDp'],
+                                           ['Kminus_PIDK', 'Kminus_PIDmu']], signal_name='lambda_0')
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['mu1_PIDmu', ['mu1_PIDmu', 'mu1_PIDp'],
+                                           ['mu1_PIDmu', 'mu1_PIDK']], signal_name='lambda_0')
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['tauMu_PIDmu', ['tauMu_PIDmu', 'tauMu_PIDp'],
+                                           ['tauMu_PIDmu', 'tauMu_PIDK']], signal_name='lambda_0')
 
     data_frame = data_frame[data_frame['sum_m'] > 2300]  # remove lower part too or not?
     # TODO look at pid outside and inside peak
@@ -153,13 +99,26 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
     mom_z = sum([data_frame[i + 'Z'] for i in particles])
     sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
     data_frame['dimuon_mass'] = sum_m
+    plt.hist2d(data_frame['Lb_M'], data_frame['dimuon_mass'], bins=30, range=[[2000, 8000], [300, 4000]])
+    plt.axvline(masses['Lb'])
+    plt.axhline(masses['J/psi'])
+    plt.colorbar()
+    plt.show()
     compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3050)]
-    compare_data = compare_data[(compare_data['Lb_M'] < 5800) & (compare_data['Lb_M'] > 5200)]
+    # compare_data=data_frame
+    compare_data = compare_data[(compare_data['Lb_M'] < 5650) & (compare_data['Lb_M'] > 5590)]
+    # plt.hist(compare_data['dimuon_mass'], bins=50, range=[2000, 8000])
+    # plt.show()
+    # n, b, p = plt.hist(compare_data['Lb_M'], bins=100, range=[4000, 7000])
+    # plt.fill_between([5590, 5650], 0, np.max(n)*1.1, color='red', alpha=0.3)
+    # plt.axvline(masses['Lb'], c='k')
+    # plt.show()
     print('comp', len(compare_data))
     data_frame = data_frame[(data_frame['dimuon_mass'] > 3150) | (data_frame['dimuon_mass'] < 3050)]
     # data_frame = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3050)]
     data_frame = data_frame[(data_frame['dimuon_mass'] > 3700) | (data_frame['dimuon_mass'] < 3650)]
-    background_selection = data_frame[(data_frame['Lb_M'] > 5800) | (data_frame['Lb_M'] < 5200)]
+    # background_selection = data_frame[(data_frame['Lb_M'] > 5800) | (data_frame['Lb_M'] < 5200)]
+    background_selection = data_frame[(data_frame['Lb_M'] > 5800)]
     # background_selection = data_frame[(data_frame['dimuon_mass'] > 3050) | (data_frame['dimuon_mass'] < 3150)]
     print('back', len(background_selection))
     if to_plot:
@@ -172,100 +131,33 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
         plt.ylabel('occurrences')
         plt.show()
 
-        fig, axs = plt.subplots(1, 2)
-        axs[0].hist(compare_data['Lb_pmu_ISOLATION_BDT1'], bins=50)
-        axs[0].set_title('Lb_pmu_ISOLATION_BDT1 jpsi')
-        axs[1].hist(background_selection['Lb_pmu_ISOLATION_BDT1'], bins=50)
-        axs[1].set_title('Lb_pmu_ISOLATION_BDT1 background')
+        # fig, axs = plt.subplots(1, 2)
+        # axs[0].hist(compare_data['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True)
+        # axs[0].set_title('Lb_pmu_ISOLATION_BDT1 jpsi')
+        # axs[1].hist(background_selection['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True)
+        # axs[1].set_title('Lb_pmu_ISOLATION_BDT1 background')
+        plt.hist(compare_data['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True)
+        plt.hist(background_selection['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True, alpha=0.3)
         plt.show()
 
         selection_range = 100
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['proton_PIDp'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('proton_PIDp jpsi')
-        axs[0, 1].hist(background_selection['proton_PIDp'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('proton_PIDp background')
-        axs[1, 0].hist(compare_data['proton_PIDp'] - compare_data['proton_PIDK'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('proton_PIDp - proton_PIDK jpsi')
-        axs[1, 1].hist(background_selection['proton_PIDp'] - background_selection['proton_PIDK'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('proton_PIDp - proton_PIDK background')
-        axs[2, 0].hist(compare_data['proton_PIDp'] - compare_data['proton_PIDmu'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('proton_PIDp - proton_PIDmu jpsi')
-        axs[2, 1].hist(background_selection['proton_PIDp'] - background_selection['proton_PIDmu'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('proton_PIDp - proton_PIDmu background')
-        plt.show()
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['proton_PIDp', ['proton_PIDp', 'proton_PIDK'],
+                                           ['proton_PIDp', 'proton_PIDmu']], signal_name='jpsi')
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['Kminus_PIDK', ['Kminus_PIDK', 'Kminus_PIDp'],
+                                           ['Kminus_PIDK', 'Kminus_PIDmu']], signal_name='jpsi')
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['mu1_PIDmu', ['mu1_PIDmu', 'mu1_PIDp'],
+                                           ['mu1_PIDmu', 'mu1_PIDK']], signal_name='jpsi')
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['tauMu_PIDmu', ['tauMu_PIDmu', 'tauMu_PIDp'],
+                                           ['tauMu_PIDmu', 'tauMu_PIDK']], signal_name='jpsi')
 
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['Kminus_PIDK'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('Kminus_PIDK jpsi')
-        axs[0, 1].hist(background_selection['Kminus_PIDK'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('Kminus_PIDK background')
-        axs[1, 0].hist(compare_data['Kminus_PIDK'] - compare_data['Kminus_PIDp'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('Kminus_PIDK - Kminus_PIDp jpsi')
-        axs[1, 1].hist(background_selection['Kminus_PIDK'] - background_selection['Kminus_PIDp'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('Kminus_PIDK - Kminus_PIDp background')
-        axs[2, 0].hist(compare_data['Kminus_PIDK'] - compare_data['Kminus_PIDmu'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('Kminus_PIDK - Kminus_PIDmu jpsi')
-        axs[2, 1].hist(background_selection['Kminus_PIDK'] - background_selection['Kminus_PIDmu'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('Kminus_PIDK - Kminus_PIDmu background')
-        plt.show()
+        plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
+                          columns_to_plot=['tauMu_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'proton_IPCHI2_OWNPV',
+                                           'Kminus_IPCHI2_OWNPV'], signal_name='jpsi')
 
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['mu1_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('mu1_PIDmu jpsi')
-        axs[0, 1].hist(background_selection['mu1_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('mu1_PIDmu background')
-        axs[1, 0].hist(compare_data['mu1_PIDmu'] - compare_data['mu1_PIDp'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('mu1_PIDmu - mu1_PIDp jpsi')
-        axs[1, 1].hist(background_selection['mu1_PIDmu'] - background_selection['mu1_PIDp'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('mu1_PIDmu - mu1_PIDp background')
-        axs[2, 0].hist(compare_data['mu1_PIDmu'] - compare_data['mu1_PIDK'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('mu1_PIDmu - mu1_PIDK jpsi')
-        axs[2, 1].hist(background_selection['mu1_PIDmu'] - background_selection['mu1_PIDK'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('mu1_PIDmu - mu1_PIDK background')
-        plt.show()
-
-        fig, axs = plt.subplots(3, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['tauMu_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('tauMu_PIDmu jpsi')
-        axs[0, 1].hist(background_selection['tauMu_PIDmu'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('tauMu_PIDmu background')
-        axs[1, 0].hist(compare_data['tauMu_PIDmu'] - compare_data['tauMu_PIDp'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('tauMu_PIDmu - tauMu_PIDp jpsi')
-        axs[1, 1].hist(background_selection['tauMu_PIDmu'] - background_selection['tauMu_PIDp'], bins=50,
-                       range=[0, selection_range])
-        axs[1, 1].set_title('tauMu_PIDmu - tauMu_PIDp background')
-        axs[2, 0].hist(compare_data['tauMu_PIDmu'] - compare_data['tauMu_PIDK'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('tauMu_PIDmu - tauMu_PIDK jpsi')
-        axs[2, 1].hist(background_selection['tauMu_PIDmu'] - background_selection['tauMu_PIDK'], bins=50,
-                       range=[0, selection_range])
-        axs[2, 1].set_title('tauMu_PIDmu - tauMu_PIDK background')
-        plt.show()
-
-        fig, axs = plt.subplots(4, 2, gridspec_kw={'hspace': 0.6}, figsize=(10, 6))
-        axs[0, 0].hist(compare_data['tauMu_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[0, 0].set_title('tauMu_IPCHI2_OWNPV jpsi')
-        axs[0, 1].hist(background_selection['tauMu_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[0, 1].set_title('tauMu_IPCHI2_OWNPV background')
-        axs[1, 0].hist(compare_data['mu1_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[1, 0].set_title('mu1_IPCHI2_OWNPV jpsi')
-        axs[1, 1].hist(background_selection['mu1_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[1, 1].set_title('mu1_IPCHI2_OWNPV background')
-        axs[2, 0].hist(compare_data['proton_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[2, 0].set_title('proton_IPCHI2_OWNPV jpsi')
-        axs[2, 1].hist(background_selection['proton_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[2, 1].set_title('proton_IPCHI2_OWNPV background')
-        axs[3, 0].hist(compare_data['Kminus_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[3, 0].set_title('Kminus_IPCHI2_OWNPV jpsi')
-        axs[3, 1].hist(background_selection['Kminus_IPCHI2_OWNPV'], bins=50, range=[0, selection_range])
-        axs[3, 1].set_title('Kminus_IPCHI2_OWNPV background')
-        plt.show()
     # data_frame = data_frame[(data_frame['dimuon_mass'] > 3150) | (data_frame['dimuon_mass'] < 3000)]
     # data_frame = data_frame.reset_index()
     # print(data_frame['Kminus_PIDe'].describe())
@@ -279,6 +171,8 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
 
 
 def clean_cuts(data_frame, to_plot=False):
+    # data_frame = data_frame[data_frame['mu1_L0Global_Dec']]
+    # data_frame = data_frame[data_frame['tauMu_L0Global_Dec']]
     if to_plot:
         columns_to_plot = ['proton_P', 'proton_PT', 'Kminus_P', 'Kminus_PT', 'mu1_P', 'mu1_PT', 'tauMu_P', 'tauMu_PT']
         fig, axs = plt.subplots(4, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
@@ -328,6 +222,9 @@ def clean_cuts(data_frame, to_plot=False):
     proton_PIDp_threshold = 10
     proton_PIDpK_threshold = 10
 
+    plt.hist2d(data_frame['mu1_PT'], data_frame['tauMu_PT'], bins=50, range=[[0, 8e3], [0, 8e3]])
+    plt.show()
+
     data_frame = data_frame[data_frame['proton_P'] > proton_P_threshold]
     data_frame = data_frame[data_frame['proton_PT'] > proton_PT_threshold]
     data_frame = data_frame[data_frame['mu1_P'] > mu1_P_threshold]
@@ -357,7 +254,7 @@ def impact_parameter_cleaning(data_frame: pd.DataFrame, threshold: int = 9):
     :return: cleaned data frame
     """
     data_frame = data_frame[data_frame['tauMu_IPCHI2_OWNPV'] > threshold]
-    data_frame = data_frame[data_frame['proton_IPCHI2_OWNPV'] > threshold]
+    data_frame = data_frame[data_frame['proton_IPCHI2_OWNPV'] > 16]
     data_frame = data_frame[data_frame['Kminus_IPCHI2_OWNPV'] > threshold]
     data_frame = data_frame[data_frame['mu1_IPCHI2_OWNPV'] > threshold]
     data_frame = data_frame.reset_index()
@@ -373,8 +270,8 @@ def pid_cleaning(data_frame):
     """
     # need to do estimate for lambda c
     data_frame = data_frame[data_frame['proton_PIDp'] > 15]
-    data_frame = data_frame[data_frame['Kminus_PIDK'] - data_frame['Kminus_PIDp'] > 15]
-    data_frame = data_frame[data_frame['mu1_PIDmu'] - data_frame['mu1_PIDK'] > 15]
+    data_frame = data_frame[data_frame['Kminus_PIDK'] - data_frame['Kminus_PIDp'] > 15]  # or 9?
+    data_frame = data_frame[data_frame['mu1_PIDmu'] - data_frame['mu1_PIDK'] > 15]  # 9 or not?
     return data_frame
 
 
@@ -395,7 +292,7 @@ def reduce_background(data_frame):
 if __name__ == '__main__':
     a = load_data(add_branches())
     a.dropna(inplace=True)
-    a = clean_cuts(a, False)
+    a = clean_cuts(a, True)
     # a = a[a['Lb_pmu_ISOLATION_BDT1'] < 0.2]
     a = a.reset_index()
     df = identify_p_k_j_psi(a, to_plot=True)
