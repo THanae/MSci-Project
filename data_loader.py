@@ -1,21 +1,25 @@
 import uproot
 import numpy as np
+import pandas as pd
 
 
-def load_data(columns, year=2016):
+def load_data(columns):
     columns = set(columns)
-    # file = uproot.open(f"merge_{year}.root")
-    # file = uproot.open(f"lb_test.root")
-    file = uproot.open(f"Lb2pKmumu_2018_MagUp.root")
-    # events = file['LbTuple/DecayTree']
-    events = file['DecayTree']
-    print(events.show())
-    events_frame = events.pandas.df(columns)
+    # file_names = ['Lb2pKmumu_2018_MagUp.root', 'Lb2pKmumu_2018_MagDown.root', 'Lb2pKmumu_2017_MagUp.root',
+    #               'Lb2pKmumu_2017_MagDown.root']
+    # file_names = ['Lb2pKmumu_MC_MagUp.root', 'Lb2pKmumu_MC_MagDown.root']
+    # file_names = ['B2Ksttaumu_MC_MagUp.root', 'B2Ksttaumu_MC_MagDown.root']
+    file_names = ['B2Kstmutau_MC_MagUp.root', 'B2Kstmutau_MC_MagDown.root']
+    events_frame = pd.DataFrame()
+    for f in file_names:
+        file = uproot.open(f)
+        events = file['DecayTree'] if 'B2' not in f else file['LbTuple/DecayTree']
+        print(events.show())
+        # events_frame = events.pandas.df(columns)
+        events_frame = pd.concat([events_frame, events.pandas.df(columns)], axis=0, ignore_index=True)
+        print(events_frame)
+    # events_frame = events_frame.reset_index()
     print(events_frame.index)
-    # events_frame = events_frame.reset_index(level=['subentry'])
-    # no sub-entries when using ownpv so sub-entries have something to do with other primary vertices
-    # events_frame = events_frame[events_frame['subentry'] < 1]
-    # events_frame = events_frame.drop('subentry', axis=1)
     return events_frame
 
 
@@ -26,23 +30,25 @@ def add_branches():
     """
     lb = ['Lb_M', 'Lb_ENDVERTEX_CHI2', 'Lb_DIRA_OWNPV', 'Lb_M', 'Lb_FD_OWNPV', 'Lb_OWNPV_X', 'Lb_OWNPV_Y', 'Lb_OWNPV_Z',
           'Lb_OWNPV_XERR', 'Lb_OWNPV_YERR', 'Lb_OWNPV_ZERR', 'Lb_ENDVERTEX_X', 'Lb_ENDVERTEX_Y', 'Lb_ENDVERTEX_Z',
-          'Lb_ENDVERTEX_XERR', 'Lb_ENDVERTEX_YERR', 'Lb_ENDVERTEX_ZERR', "Lb_PE", "Lb_PX", "Lb_PY", "Lb_PZ", "Lb_P"]
+          'Lb_ENDVERTEX_XERR', 'Lb_ENDVERTEX_YERR', 'Lb_ENDVERTEX_ZERR', "Lb_PE", "Lb_PX", "Lb_PY", "Lb_PZ", "Lb_P",
+          'Lb_L0Global_Dec', 'mu1_L0Global_Dec', 'tauMu_L0Global_Dec', 'Lb_FDCHI2_OWNPV']
     pkmu = ['pKmu_P', 'pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z', 'pKmu_OWNPV_X', 'pKmu_OWNPV_Y',
             'pKmu_OWNPV_Z', 'pKmu_PE', 'pKmu_PX', 'pKmu_PY', 'pKmu_PZ']
     cleaning = ["proton_P", "proton_PT", "Kminus_PT", "mu1_P", "mu1_PT", "tauMu_P", "tauMu_PT"]
     proton = ["proton_PE", "proton_PX", "proton_PY", "proton_PZ", "proton_P"]
     kminus = ["Kminus_PE", "Kminus_PX", "Kminus_PY", "Kminus_PZ", "Kminus_P"]
-    mu1 = ["mu1_PE", "mu1_PX", "mu1_PY", "mu1_PZ", "mu1_P"]
+    mu1 = ["mu1_PE", "mu1_PX", "mu1_PY", "mu1_PZ", "mu1_P", 'mu1_REFPX', 'mu1_REFPY', 'mu1_REFPZ']
     mu2 = ["tauMu_PE", "tauMu_PX", "tauMu_PY", "tauMu_PZ", "tauMu_P", 'tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']
-    error_pkmu_ref = ['pKmu_REFP_COVXX', 'pKmu_REFP_COVYY', 'pKmu_REFP_COVZZ', 'pKmu_REFP_COVXY', 'pKmu_REFP_COVXZ',
-                      'pKmu_REFP_COVYZ']
-    error_taumu = ['tauMu_REFP_COVXX', 'tauMu_REFP_COVYY', 'tauMu_REFP_COVZZ', 'tauMu_REFP_COVXY', 'tauMu_REFP_COVXZ',
-                   'tauMu_REFP_COVYZ']
-    p_ref_cov = [x + '_P_REFP_COV_P' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters
-                 in ['X_X', 'Y_X', 'Y_Y', 'Z_Z', 'Y_Z', 'Z_X', 'Z_Y', 'X_Y', 'X_Z', 'Y_Z']]
-    p_cov = [x + '_P_COV' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters in
-             ['XX', 'YY', 'ZZ', 'XY', 'XZ', 'YZ']]
-    errors = error_pkmu_ref + error_taumu + p_cov + p_ref_cov
+    # error_pkmu_ref = ['pKmu_REFP_COVXX', 'pKmu_REFP_COVYY', 'pKmu_REFP_COVZZ', 'pKmu_REFP_COVXY', 'pKmu_REFP_COVXZ',
+    #                   'pKmu_REFP_COVYZ']
+    # error_taumu = ['tauMu_REFP_COVXX', 'tauMu_REFP_COVYY', 'tauMu_REFP_COVZZ', 'tauMu_REFP_COVXY', 'tauMu_REFP_COVXZ',
+    #                'tauMu_REFP_COVYZ']
+    # p_ref_cov = [x + '_P_REFP_COV_P' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters
+    #              in ['X_X', 'Y_X', 'Y_Y', 'Z_Z', 'Y_Z', 'Z_X', 'Z_Y', 'X_Y', 'X_Z', 'Y_Z']]
+    # p_cov = [x + '_P_COV' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters in
+    #          ['XX', 'YY', 'ZZ', 'XY', 'XZ', 'YZ']]
+    # errors = error_pkmu_ref + error_taumu + p_cov + p_ref_cov
+    errors = []
     chi_squared = ['pKmu_OWNPV_CHI2', 'mu1_isMuon', 'pKmu_ENDVERTEX_CHI2']
     impact_parameter = ['proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV',
                         'pKmu_IPCHI2_OWNPV']
@@ -50,7 +56,15 @@ def add_branches():
            'proton_PIDp', 'Kminus_PIDK', 'mu1_PIDmu', 'tauMu_PIDmu', 'proton_PIDK', 'proton_PIDmu',
            'Kminus_PIDp', 'Kminus_PIDmu', 'mu1_PIDp', 'mu1_PIDK', 'tauMu_PIDp', 'tauMu_PIDK']
     bdt = ['Lb_pmu_ISOLATION_BDT1']
-    return lb + cleaning + proton + kminus + mu1 + mu2 + pkmu + errors + chi_squared + impact_parameter + pid + bdt
+    mc = ['Lb_MC_MOTHER_ID', 'pKmu_MC_MOTHER_ID', 'proton_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID', 'tauMu_MC_MOTHER_ID',
+          'Kminus_MC_MOTHER_ID', 'Lb_MC_GD_MOTHER_ID', 'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID',
+          'Kminus_MC_GD_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_ID', 'proton_ID', 'mu1_ID', 'tauMu_ID',
+          'proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
+          'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY', 'proton_MC_GD_MOTHER_KEY',
+          'proton_TRUEID', 'Kminus_TRUEID', 'mu1_TRUEID', 'tauMu_TRUEID']
+    # mc = ['mu1_ID']
+    pt = ['pKmu_PT', 'mu1_PT']
+    return lb + cleaning + proton + kminus + mu1 + mu2 + pkmu + errors + chi_squared + impact_parameter + pid + bdt + mc + pt
 
 
 def check_for_both_charges(data_frame):
@@ -120,5 +134,5 @@ def check_for_both_charges(data_frame):
 
 if __name__ == '__main__':
     a = load_data(add_branches())
-    check_for_both_charges(a)
+    # check_for_both_charges(a)
     print(a)

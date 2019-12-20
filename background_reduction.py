@@ -1,19 +1,16 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+
 from data_loader import load_data, add_branches
-from masses import masses
-from plotting_functions import plot_compare_data
+from masses import masses, get_mass
+from plotting_functions import plot_compare_data, plot_columns
 
 
 def plot_pkmu_mass(data_frame, to_plot):
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu']]
-    particles = ['Kminus_P', 'proton_P', 'mu1_P']
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     data_frame['sum_m'] = sum_m
     print('final length of the data', len(sum_m))
     compare_data = data_frame[(data_frame['sum_m'] < 2300) & (data_frame['sum_m'] > 2200)]
@@ -49,38 +46,32 @@ def plot_pkmu_mass(data_frame, to_plot):
 
 def plot_kmu_mass(data_frame, to_plot):
     particles_associations = [['Kminus_P', 'K'], ['mu1_P', 'mu']]
-    particles = ['Kminus_P', 'mu1_P']
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
-    data_frame['sum_m'] = sum_m
-    print('final length of the data', len(sum_m))
+    kmu_mass = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    data_frame['kmu_mass'] = kmu_mass
+    data_frame.loc[data_frame['mu1_ID'] < 0, 'kmu_mass'] = 25000
+    print(data_frame['mu1_ID'].describe())
+    print('final length of the data', len(kmu_mass))
     if to_plot:
         # plt.hist(sum_m, bins=50, range=[4500, 6500])
-        n, b, p = plt.hist(sum_m, bins=100, range=[0, 4000])
+        n, b, p = plt.hist(data_frame['kmu_mass'], bins=100, range=[0, 4000])
         plt.axvline(masses['D0'], c='k')  # mass of d0
         plt.fill_between([1830, 1880], 0, np.max(n), color='red', alpha=0.3)  # [2828, 3317]
         plt.xlabel('$m_{K\\mu}$')
         plt.ylabel('occurrences')
         plt.show()
-    # need to find way to get muon with opposite charge to kaon
-    # then can remove events with kmu mass smaller than upper limit for peak
-    # data_frame = data_frame[(data_frame['sum_m'] <1840) | (data_frame['sum_m'] > 1880)]
-    data_frame = data_frame[(data_frame['sum_m'] > 1880)]
+
+        plt.hist2d(data_frame['kmu_mass'], data_frame['Lb_M'], bins=20, norm=LogNorm())
+        plt.xlabel('$m_{K\\mu}$')
+        plt.ylabel('$m_{pK\\mu\\mu}$')
+        plt.colorbar()
+        plt.axhline(masses['Lb'])
+        plt.show()
     return data_frame
 
 
 def plot_mumu_mass(data_frame):
     particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    particles = ['mu1_P', 'tauMu_P']
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    print(len(mom_x), len(data_frame))
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     data_frame['dimuon_mass'] = sum_m
     plt.hist(sum_m, bins=100, range=[0, 8000])
     # plt.fill_between([2828, 3317], 0, 17000, color='red', alpha=0.3)
@@ -92,16 +83,14 @@ def plot_mumu_mass(data_frame):
 
 def identify_p_k_j_psi(data_frame, to_plot=True):
     particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    particles = ['mu1_P', 'tauMu_P']
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     data_frame['dimuon_mass'] = sum_m
-    plt.hist2d(data_frame['Lb_M'], data_frame['dimuon_mass'], bins=30, range=[[2000, 8000], [300, 4000]])
+    plt.hist2d(data_frame['Lb_M'], data_frame['dimuon_mass'], bins=30, range=[[2000, 8000], [300, 4000]],
+               norm=LogNorm())
     plt.axvline(masses['Lb'])
     plt.axhline(masses['J/psi'])
+    plt.xlabel('$m_{pK\\mu\\mu}$')
+    plt.ylabel('$m_{\\mu\\mu}$')
     plt.colorbar()
     plt.show()
     compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3050)]
@@ -131,15 +120,41 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
         plt.ylabel('occurrences')
         plt.show()
 
-        # fig, axs = plt.subplots(1, 2)
-        # axs[0].hist(compare_data['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True)
-        # axs[0].set_title('Lb_pmu_ISOLATION_BDT1 jpsi')
-        # axs[1].hist(background_selection['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True)
-        # axs[1].set_title('Lb_pmu_ISOLATION_BDT1 background')
         plt.hist(compare_data['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True)
         plt.hist(background_selection['Lb_pmu_ISOLATION_BDT1'], bins=30, density=True, alpha=0.3)
         plt.show()
+        plt.hist(compare_data['Lb_FD_OWNPV'], bins=80, density=True, range=[0, 80])
+        plt.hist(background_selection['Lb_FD_OWNPV'], bins=80, density=True, alpha=0.3, range=[0, 80])
+        plt.show()
 
+        mu_peak = data_frame[(data_frame['dimuon_mass'] > 1760) & (data_frame['dimuon_mass'] < 1860)]
+        fig, axs = plt.subplots(1, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
+        axs[0].hist2d(compare_data['mu1_PIDmu'], compare_data['tauMu_PIDmu'], bins=50, range=[[0, 15], [0, 15]],
+                      norm=LogNorm())
+        axs[0].set_xlabel('mu1_PIDmu')
+        axs[0].set_ylabel('tauMu_PIDmu')
+        axs[0].set_title('JPSI')
+
+        axs[1].hist2d(mu_peak['mu1_PIDmu'], mu_peak['tauMu_PIDmu'], bins=50, range=[[0, 15], [0, 15]], norm=LogNorm())
+        axs[1].set_xlabel('mu1_PIDmu')
+        axs[1].set_ylabel('tauMu_PIDmu')
+        axs[1].set_title('Background')
+        # axs[1].colorbar()
+        plt.show()
+
+        fig, axs = plt.subplots(1, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
+        axs[0].hist2d(compare_data['mu1_PIDK'], compare_data['tauMu_PIDK'], bins=50, range=[[0, 15], [0, 15]],
+                      norm=LogNorm())
+        axs[0].set_xlabel('mu1_PIDK')
+        axs[0].set_ylabel('tauMu_PIDK')
+        axs[0].set_title('JPSI')
+
+        axs[1].hist2d(mu_peak['mu1_PIDK'], mu_peak['tauMu_PIDK'], bins=50, range=[[0, 15], [0, 15]], norm=LogNorm())
+        axs[1].set_xlabel('mu1_PIDK')
+        axs[1].set_ylabel('tauMu_PIDK')
+        axs[1].set_title('Background')
+        # axs[1].colorbar()
+        plt.show()
         selection_range = 100
         plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
                           columns_to_plot=['proton_PIDp', ['proton_PIDp', 'proton_PIDK'],
@@ -157,17 +172,10 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
         plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
                           columns_to_plot=['tauMu_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'proton_IPCHI2_OWNPV',
                                            'Kminus_IPCHI2_OWNPV'], signal_name='jpsi')
-
-    # data_frame = data_frame[(data_frame['dimuon_mass'] > 3150) | (data_frame['dimuon_mass'] < 3000)]
-    # data_frame = data_frame.reset_index()
-    # print(data_frame['Kminus_PIDe'].describe())
-    # print(data_frame['proton_PIDe'].describe())
-    # TODO look at pid outside and inside peak
-    # need to look fro jpsi in the lambda b mass region
-    # TODO need to make cut around the dimuon mass to remove jpsi and psi2s events if true (make arg)
-    # look at Lb_pmu_ISOLATION_BDT1
-
+        plot_compare_data(compare_data, background_selection, histogram_range=2000,
+                          columns_to_plot=['Lb_FD_OWNPV', 'pKmu_ENDVERTEX_CHI2', 'Lb_FDCHI2_OWNPV'], signal_name='jpsi')
     return data_frame
+    # return compare_data
 
 
 def clean_cuts(data_frame, to_plot=False):
@@ -194,24 +202,11 @@ def clean_cuts(data_frame, to_plot=False):
             axs[np.int(np.floor(i / 2)), column].set_title(name)
         plt.show()
 
-        fig, axs = plt.subplots(4, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
-        axs[0, 0].hist(data_frame['proton_PIDp'] - data_frame['proton_PIDK'], 100, range=[0, 100])
-        axs[0, 0].set_title('proton_PIDp-proton_PIDK')
-        axs[0, 1].hist(data_frame['proton_PIDp'] - data_frame['proton_PIDmu'], 100, range=[0, 100])
-        axs[0, 1].set_title('proton_PIDp-proton_PIDmu')
-        axs[1, 0].hist(data_frame['Kminus_PIDK'] - data_frame['Kminus_PIDp'], 100, range=[0, 100])
-        axs[1, 0].set_title('Kminus_PIDK-Kminus_PIDp')
-        axs[1, 1].hist(data_frame['Kminus_PIDK'] - data_frame['Kminus_PIDmu'], 100, range=[0, 100])
-        axs[1, 1].set_title('Kminus_PIDK-Kminus_PIDmu')
-        axs[2, 0].hist(data_frame['mu1_PIDmu'] - data_frame['mu1_PIDp'], 100, range=[0, 100])
-        axs[2, 0].set_title('mu1_PIDmu-mu1_PIDp')
-        axs[2, 1].hist(data_frame['mu1_PIDmu'] - data_frame['mu1_PIDK'], 100, range=[0, 100])
-        axs[2, 1].set_title('mu1_PIDmu-mu1_PIDK')
-        axs[3, 0].hist(data_frame['tauMu_PIDmu'] - data_frame['tauMu_PIDp'], 100, range=[0, 100])
-        axs[3, 0].set_title('tauMu_PIDmu-tauMu_PIDp')
-        axs[3, 1].hist(data_frame['tauMu_PIDmu'] - data_frame['tauMu_PIDK'], 100, range=[0, 100])
-        axs[3, 1].set_title('tauMu_PIDmu-tauMu_PIDK')
-        plt.show()
+        plot_columns(data_frame=data_frame, histogram_range=[0, 100], bins=100,
+                     columns_to_plot=[['proton_PIDp', 'proton_PIDK'], ['proton_PIDp', 'proton_PIDmu'],
+                                      ['Kminus_PIDK', 'Kminus_PIDp'], ['Kminus_PIDK', 'Kminus_PIDmu'],
+                                      ['mu1_PIDmu', 'mu1_PIDp'], ['mu1_PIDmu', 'mu1_PIDK'],
+                                      ['tauMu_PIDmu', 'tauMu_PIDp'], ['tauMu_PIDmu', 'tauMu_PIDK']])
 
     proton_P_threshold = 15e3
     proton_PT_threshold = 1000
@@ -222,7 +217,16 @@ def clean_cuts(data_frame, to_plot=False):
     proton_PIDp_threshold = 10
     proton_PIDpK_threshold = 10
 
-    plt.hist2d(data_frame['mu1_PT'], data_frame['tauMu_PT'], bins=50, range=[[0, 8e3], [0, 8e3]])
+    plt.hist2d(data_frame['mu1_PT'], data_frame['tauMu_PT'], bins=50, range=[[0, 8e3], [0, 8e3]], norm=LogNorm())
+    plt.xlabel('mu1_PT')
+    plt.ylabel('tauMu_PT')
+    plt.colorbar()
+    plt.show()
+
+    plt.hist2d(data_frame['mu1_PIDmu'], data_frame['tauMu_PIDmu'], bins=50, range=[[0, 15], [0, 15]], norm=LogNorm())
+    plt.xlabel('mu1_PIDmu')
+    plt.ylabel('tauMu_PIDmu')
+    plt.colorbar()
     plt.show()
 
     data_frame = data_frame[data_frame['proton_P'] > proton_P_threshold]
@@ -233,6 +237,12 @@ def clean_cuts(data_frame, to_plot=False):
     data_frame = data_frame[data_frame['tauMu_PT'] > tauMu_PT_threshold]
     data_frame = data_frame[data_frame['proton_PIDp'] > proton_PIDp_threshold]
     data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDK'] > proton_PIDpK_threshold]
+
+    # data_frame = data_frame[(data_frame['tauMu_PIDmu'] > 3) & (data_frame['tauMu_PIDmu'] < 9)]
+    # data_frame = data_frame[(data_frame['mu1_PIDmu'] > 3) & (data_frame['mu1_PIDmu'] < 9)]
+    data_frame = data_frame[(data_frame['tauMu_PIDmu'] > 2)]
+    data_frame = data_frame[(data_frame['mu1_PIDmu'] > 2)]
+
     data_frame = data_frame.reset_index(drop=True)
     return data_frame
 
@@ -240,9 +250,11 @@ def clean_cuts(data_frame, to_plot=False):
 def chi2_cleaning(data_frame):
     # TODO compare with control data
     plt.hist(data_frame['Lb_FD_OWNPV'], bins=50, range=[0, 100])
+    plt.title('Lb_FD_OWNPV')
     plt.show()
     data_frame = data_frame[data_frame['pKmu_ENDVERTEX_CHI2'] < 9]
-    data_frame = data_frame[data_frame['Lb_FD_OWNPV'] < 16]
+    data_frame = data_frame[data_frame['Lb_FDCHI2_OWNPV'] > 200]
+    # data_frame = data_frame[data_frame['Lb_FD_OWNPV'] > 12]  # ??
     return data_frame
 
 
@@ -269,8 +281,11 @@ def pid_cleaning(data_frame):
     :return: cleaned data
     """
     # need to do estimate for lambda c
-    data_frame = data_frame[data_frame['proton_PIDp'] > 15]
-    data_frame = data_frame[data_frame['Kminus_PIDK'] - data_frame['Kminus_PIDp'] > 15]  # or 9?
+    data_frame = data_frame[data_frame['Kminus_PIDK'] - data_frame['Kminus_PIDp'] > 10]  # or 9?
+    data_frame = data_frame[data_frame['Kminus_PIDK'] - data_frame['Kminus_PIDmu'] > 10]  # or 9?
+    data_frame = data_frame[data_frame['Kminus_PIDK'] > 10]  # or 9?
+    data_frame = data_frame[data_frame['proton_PIDp'] > 15]  # or 9?
+    data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDK'] > 15]  # or 9?
     data_frame = data_frame[data_frame['mu1_PIDmu'] - data_frame['mu1_PIDK'] > 15]  # 9 or not?
     return data_frame
 
@@ -284,18 +299,98 @@ def reduce_background(data_frame):
     data_frame = data_frame[data_frame['Lb_pmu_ISOLATION_BDT1'] < 0.2]
     data_frame = identify_p_k_j_psi(data_frame, False)
     data_frame = plot_pkmu_mass(data_frame, False)
-    # data_frame = plot_kmu_mass(data_frame, False)
+    data_frame = plot_kmu_mass(data_frame, False)
     data_frame = data_frame.reset_index()
+    return data_frame
+
+
+def b_cleaning(data_frame):
+    plot_columns(data_frame=data_frame, bins=200, histogram_range=[-400, 400],
+                 columns_to_plot=['Kminus_TRUEID', 'proton_TRUEID', 'tauMu_TRUEID',
+                                  'mu1_TRUEID'])
+    plot_columns(data_frame=data_frame, bins=200, histogram_range=[-800, 800],
+                 columns_to_plot=['proton_MC_MOTHER_ID', 'Kminus_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID',
+                                  'tauMu_MC_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_MC_GD_MOTHER_ID',
+                                  'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID'])
+    plot_columns(data_frame=data_frame, bins=100, histogram_range=[1, 1000],
+                 columns_to_plot=['proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
+                                  'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY'])
+
+    # data_frame = data_frame[data_frame['proton_PIDp'] < 0.5]
+    # data_frame = data_frame[data_frame['proton_PIDK'] < 0.5]
+    # data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDK'] < 1]
+    # data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDmu'] < 1]
+
+    # data_frame = data_frame[data_frame['Lb_MC_MOTHER_ID']>500]
+
+    # for i in range(len(data_frame)):
+    #     print(data_frame['Kminus_MC_MOTHER_ID'].loc[i], data_frame['proton_MC_MOTHER_ID'].loc[i],
+    #           data_frame['mu1_MC_MOTHER_ID'].loc[i], data_frame['tauMu_MC_MOTHER_ID'].loc[i])
+
+    # data_frame = data_frame[(data_frame['Kminus_MC_MOTHER_ID'].abs()).isin(kstar_possibilities)]
+    # data_frame = data_frame[(data_frame['proton_MC_MOTHER_ID'].abs()).isin(kstar_possibilities)]
+    # data_frame = data_frame[data_frame['mu1_MC_MOTHER_ID'].abs()==511]
+    # data_frame = data_frame[data_frame['tauMu_MC_MOTHER_ID'].abs()==15]
+    # data_frame = data_frame[data_frame['Kminus_MC_GD_MOTHER_ID'].abs() ==511]
+    # data_frame = data_frame[data_frame['proton_MC_GD_MOTHER_ID'].abs() == 511]
+    # data_frame = data_frame[data_frame['tauMu_MC_GD_MOTHER_ID'].abs() == 511]
+    print(len(data_frame))
+    data_frame = data_frame[data_frame['Kminus_TRUEID'].abs() == 321]
+    print(len(data_frame))
+    data_frame = data_frame[data_frame['proton_TRUEID'].abs() == 211]
+    print(len(data_frame))
+    data_frame = data_frame[data_frame['mu1_TRUEID'].abs() == 13]
+    print(len(data_frame))
+    data_frame = data_frame[data_frame['tauMu_TRUEID'].abs() == 13]
+    print(len(data_frame))
+    # data_frame = data_frame[data_frame['proton_MC_MOTHER_ID']>0]
+    data_frame = data_frame[data_frame['proton_MC_MOTHER_ID'].abs() == 313]
+    data_frame = data_frame[(data_frame['Kminus_MC_MOTHER_ID'] == data_frame['proton_MC_MOTHER_ID']) & (
+            data_frame['Kminus_MC_MOTHER_KEY'] == data_frame['proton_MC_MOTHER_KEY'])]
+    # data_frame = data_frame[(data_frame['Kminus_MC_MOTHER_ID'] == data_frame['proton_MC_MOTHER_ID'])]
+    # data_frame = data_frame[
+    #     (data_frame['tauMu_MC_MOTHER_ID'].abs() == 15) | (data_frame['mu1_MC_MOTHER_ID'].abs() == 15)]
+    data_frame = data_frame[(data_frame['Kminus_MC_GD_MOTHER_ID'].abs() == 511)]
+    data_frame = data_frame[(data_frame['Kminus_MC_GD_MOTHER_ID'] == data_frame['proton_MC_GD_MOTHER_ID']) & (
+            data_frame['Kminus_MC_GD_MOTHER_KEY'] == data_frame['proton_MC_GD_MOTHER_KEY'])]
+    data_frame = data_frame[((data_frame['Kminus_MC_GD_MOTHER_ID'] == data_frame['tauMu_MC_GD_MOTHER_ID']) & (
+            data_frame['tauMu_MC_MOTHER_ID'].abs() == 15)) | (
+                                    (data_frame['Kminus_MC_GD_MOTHER_ID'] == data_frame['mu1_MC_GD_MOTHER_ID']) & (
+                                        data_frame['mu1_MC_MOTHER_ID'].abs() == 15))]
+
+    # print((data_frame['proton_MC_MOTHER_ID'].abs()).describe())
+    print(len(data_frame))
+
+    data_frame = data_frame.reset_index()
+    for i in range(len(data_frame)):
+        if data_frame['mu1_MC_MOTHER_ID'].loc[i] == 15:
+            for end in ['P', 'PX', 'PY', 'PZ', 'REFPX', 'REFPY', 'REFPZ']:
+                temp = data_frame['mu1_' + end].loc[i]
+                data_frame.loc[i, 'mu1_' + end] = data_frame['tauMu_' + end].loc[i]
+                data_frame.loc[i, 'tauMu_' + end] = temp
+
+    # plot_columns(data_frame=data_frame, bins=200, histogram_range=[0, 800],
+    #              columns_to_plot=['proton_MC_MOTHER_ID', 'Kminus_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID',
+    #                               'tauMu_MC_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_MC_GD_MOTHER_ID',
+    #                               'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID'])
+    # plot_columns(data_frame=data_frame, bins=100, histogram_range=[1, 1000],
+    #              columns_to_plot=['proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
+    #                               'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY'])
+
     return data_frame
 
 
 if __name__ == '__main__':
     a = load_data(add_branches())
     a.dropna(inplace=True)
+    # df = plot_kmu_mass(a, True)
+    a = b_cleaning(a)
+    print(zrherhehh)
     a = clean_cuts(a, True)
     # a = a[a['Lb_pmu_ISOLATION_BDT1'] < 0.2]
     a = a.reset_index()
     df = identify_p_k_j_psi(a, to_plot=True)
-    # df = plot_kmu_mass(a, True)
-    # df = plot_pkmu_mass(a, True)
-    identify_p_k_j_psi(a, to_plot=True)
+    df = plot_kmu_mass(a, True)
+
+    df = plot_pkmu_mass(a, True)
+    df = identify_p_k_j_psi(df, to_plot=True)

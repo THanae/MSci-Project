@@ -1,44 +1,65 @@
-from background_reduction import reduce_background
+from matplotlib.colors import LogNorm
+
+from background_reduction import reduce_background, b_cleaning
 from data_loader import load_data, add_branches
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from masses import masses
+from masses import masses, get_mass
+from scipy.special import factorial
+import scipy.special as special
+import scipy.optimize as spo
 
 from error_propagation import error_propagation_intersection, error_propagation_transverse_momentum, \
     error_propagation_momentum_mass
 
 
 def retrieve_vertices(data_frame):
+    def exp_gaussian(x, l, mu, sigma):
+        f = l / 2 * np.exp(l / 2 * (2 * mu + l * sigma ** 2 - 2 * x))
+        complementary_error_function = special.erfc((mu + l * sigma ** 2 - x) / (np.sqrt(2) * sigma))
+        return f * complementary_error_function
+
+    x = np.linspace(0, 100, 200)
+    n, b, p = plt.hist(data_frame['tauMu_P']/2000, bins=200, range=[0, 100], density=True)
+    # print(spo.curve_fit(exp_gaussian, ((b[1:] + b[:-1]) / 2), n, p0=[0.0001, 25000, 1000]))
+    # (a, b, c), _ = spo.curve_fit(exp_gaussian, ((b[1:] + b[:-1]) / 2), n, p0=[0.0001, 25000, 1000])
+    # (a, b, c), _ = spo.curve_fit(exp_gaussian, ((b[1:] + b[:-1]) / 2), n, p0=[0.1, 25, 10])
+    # plt.plot(x, exp_gaussian(x, a, b, c), c='k')
+    # plt.plot(x, exp_gaussian(x, 0.1, 25, 10), c='m')
+    plt.title('Momenta of the the "taus"')
+    plt.show()
     all_distances, vectors, errors = [], [], []
     print('initial length of data frame: ', len(data_frame))
     for i in range(len(data_frame)):
         ts = data_frame.loc[i]
         pv_xyz = [ts['Lb_OWNPV_X'], ts['Lb_OWNPV_Y'], ts['Lb_OWNPV_Z']]
         end_xyz = [ts['pKmu_ENDVERTEX_X'], ts['pKmu_ENDVERTEX_Y'], ts['pKmu_ENDVERTEX_Z']]
-        errors_pv = [ts['Lb_OWNPV_XERR'], ts['Lb_OWNPV_YERR'], ts['Lb_OWNPV_ZERR']]
-        errors_end = [ts['pKmu_REFP_COVXX'], ts['pKmu_REFP_COVYY'], ts['pKmu_REFP_COVZZ']]
+        # errors_pv = [ts['Lb_OWNPV_XERR'], ts['Lb_OWNPV_YERR'], ts['Lb_OWNPV_ZERR']]
+        # errors_end = [ts['pKmu_REFP_COVXX'], ts['pKmu_REFP_COVYY'], ts['pKmu_REFP_COVZZ']]
         distance = np.linalg.norm(np.array(pv_xyz) - np.array(end_xyz))
         vector = np.array(end_xyz) - np.array(pv_xyz)
-        error_x = np.sqrt((errors_pv[0]) ** 2 + (errors_end[0]))
-        error_y = np.sqrt((errors_pv[1]) ** 2 + (errors_end[1]))
-        error_z = np.sqrt((errors_pv[2]) ** 2 + (errors_end[2]))
-        errors.append([error_x, error_y, error_z])
+        # error_x = np.sqrt((errors_pv[0]) ** 2 + (errors_end[0]))
+        # error_y = np.sqrt((errors_pv[1]) ** 2 + (errors_end[1]))
+        # error_z = np.sqrt((errors_pv[2]) ** 2 + (errors_end[2]))
+        # errors.append([error_x, error_y, error_z])
         vectors.append(vector)
         all_distances.append(distance)
-    data_frame['distances'] = all_distances
+    data_frame['lb_distances'] = all_distances
     # compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3000)]
-    # plt.hist(compare_data['distances'], bins=100, range=[0, 100])
+    # plt.hist(compare_data['lb_distances'], bins=100, range=[0, 100])
     # plt.show()
-    # plt.hist(data_frame['distances'], bins=100, range=[0, 100])
+    # plt.hist(data_frame['lb_distances'], bins=100, range=[0, 100])
     # plt.title('Distances travelled by the Lb')
     # plt.show()
     data_frame['vectors'] = vectors
-    data_frame['vectors_errors'] = errors
-    # data_frame = data_frame[(data_frame['distances'] > 3) & (data_frame['distances'] < 100)]  # should be changed according to what we want
-    # data_frame = data_frame.drop('distances', axis=1)
+    # data_frame['vectors_errors'] = errors
+    # data_frame = data_frame[(data_frame['lb_distances'] > 12)]
+    # data_frame = data_frame.drop('lb_distances', axis=1)
     # data_frame = data_frame[data_frame['pKmu_IPCHI2_OWNPV'] > 9]
     # data_frame = data_frame[data_frame['pKmu_OWNPV_CHI2'] > 9]
+    # data_frame = data_frame[data_frame['lb_distances'] > 5]
+    # data_frame = data_frame[data_frame['lb_distances'] < 25]
     data_frame = data_frame.reset_index(drop=True)
     return data_frame, vectors
 
@@ -175,12 +196,38 @@ def tau_momentum_mass(data_frame):
     data_frame['tau_PY'] = tau_p_y
     data_frame['tau_PZ'] = tau_p_z
     data_frame['tau_P'] = tau_p
+
+    def exp_gaussian(x, l, mu, sigma):
+        f = l / 2 * np.exp(l / 2 * (2 * mu + l * sigma ** 2 - 2 * x))
+        complementary_error_function = special.erfc((mu + l * sigma ** 2 - x) / (np.sqrt(2) * sigma))
+        return f * complementary_error_function
+
+    x = np.linspace(0, 200000, 200)
+    n, b, p = plt.hist(data_frame['tau_P'], bins=200, range=[0, 200000], density=True)
+    # print(spo.curve_fit(exp_gaussian, ((b[1:] + b[:-1]) / 2), n, p0=[0.0001, 25000, 1000]))
+    # (a, b, c), _ = spo.curve_fit(exp_gaussian, ((b[1:] + b[:-1]) / 2), n, p0=[0.0001, 25000, 1000])
+    # (a, b, c), _ = spo.curve_fit(exp_gaussian, ((b[1:] + b[:-1]) / 2), n, p0=[0.1, 25, 10])
+    # plt.plot(x, exp_gaussian(x, a, b, c), c='k')
+    # plt.plot(x, exp_gaussian(x, 0.1, 25, 10), c='m')
+    plt.title('Momenta of the the "taus"')
+    plt.show()
     data_frame['tau_distances_travelled'] = tau_distances_travelled
     compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3000)]
     # plt.hist(compare_data['tau_distances_travelled'], bins=100, range=[0, 200])
-    plt.hist(data_frame['tau_distances_travelled'], bins=100, range=[0, 30])
+    plt.hist(data_frame['tau_distances_travelled'], bins=80, range=[0, 30])
     plt.title('Distance travelled by the "taus"')
     plt.show()
+
+    # np.save('distance_real_taus.npy', data_frame['tau_distances_travelled'].values)
+
+    plt.hist2d(data_frame['tau_distances_travelled'], data_frame['lb_distances'], bins=20, range=[[0, 30], [0, 30]], norm=LogNorm())
+    plt.title('Distance travelled by the "taus" versus lb')
+    plt.colorbar()
+    plt.show()
+
+    # data_frame = data_frame[data_frame['tau_distances_travelled'] < 15]
+    # data_frame = data_frame[data_frame['tau_distances_travelled'] > 0.3]
+    data_frame = data_frame.reset_index(drop=True)
     return data_frame
 
 
@@ -194,29 +241,64 @@ def momentum(frame_array):
     return mom
 
 
+def plot_b_result(data_frame):
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    data_frame['b_mass'] = sum_m
+
+    # TODO add error for sum_m
+    print('final length of the data', len(sum_m))
+    n, b, p = plt.hist(sum_m, bins=60, range=[3500, 10000])
+    plt.vlines(5279, ymin=0, ymax=np.max(n))
+    plt.xlabel('$m_{B}$')
+    plt.ylabel('occurrences')
+    plt.show()
+    n, b, p = plt.hist(data_frame['Lb_M'], bins=60, range=[0, 10000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
+    plt.vlines(5279, ymin=0, ymax=np.max(n))
+    plt.xlabel('$m_{lb}$')
+    plt.ylabel('occurrences')
+    plt.show()
+
+
 def plot_result(data_frame):
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
-    # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    particles = ['Kminus_P', 'proton_P', 'mu1_P', 'tau_P']
-    # particles = ['Kminus_P', 'proton_P', 'mu1_P', 'tauMu_P']
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
     # TODO add errors for moms and energy
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
-    data_frame['sum_m'] = sum_m
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    data_frame['pkmutau_mass'] = sum_m
+    # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    # TODO add errors for moms and energy
+    data_frame['pkmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    plt.hist2d(data_frame['pkmumu_mass'], data_frame['pkmutau_mass'], bins=20, range=[[2000, 8000], [4000, 8000]], norm=LogNorm())
+    plt.axvline(masses['Lb'])
+    plt.xlabel('$m_{pK\\mu\\mu}$')
+    plt.ylabel('$m_{pK\\mu\\tau}$')
+    plt.axhline(masses['Lb'])
+    plt.colorbar()
+    plt.show()
+
+    # plt.hist2d(data_frame['kmu_mass'], data_frame['pkmutau_mass'], bins=20, range=[[0, 4000], [4000, 8000]], norm=LogNorm())
+    # plt.axhline(masses['Lb'])
+    # plt.colorbar()
+    # plt.show()
+
     # TODO add error for sum_m
     print('final length of the data', len(sum_m))
     # plt.hist(sum_m, bins=50, range=[4500, 6500])
-    n, b, p = plt.hist(sum_m, bins=60, range=[4000, 10000])
+    n, b, p = plt.hist(sum_m, bins=60, range=[4000, 15000])
     # n, b, p = plt.hist(data_frame['Lb_M'], bins=100, range=[0, 10000])
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
     plt.xlabel('$m_{pK\\mu\\tau}$')
     plt.ylabel('occurrences')
     plt.show()
-    new_frame = data_frame[data_frame['sum_m'] < 6500]
-    new_frame = new_frame[new_frame['sum_m'] > 4500]
+    n, b, p = plt.hist(data_frame['Lb_M'], bins=60, range=[4000, 6000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
+    plt.xlabel('$m_{pK\\mu\\mu}$')
+    plt.ylabel('occurrences')
+    plt.show()
+    new_frame = data_frame[data_frame['pkmutau_mass'] < 6500]
+    new_frame = new_frame[new_frame['pkmutau_mass'] > 4500]
     new_frame.dropna(inplace=True)
     plt.hist(new_frame['pKmu_ENDVERTEX_CHI2'], bins=50)
     plt.xlabel('$pK\\mu$' + ' endvertex  ' + '$\\chi^2$')
@@ -227,12 +309,7 @@ def plot_result(data_frame):
     plt.ylabel('occurrences')
     plt.show()
     particles_associations = [['mu1_P', 'mu'], ['tau_P', 'tau']]
-    particles = ['mu1_P', 'tau_P']
-    energy = sum([np.sqrt(new_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([new_frame[i + 'X'] for i in particles])
-    mom_y = sum([new_frame[i + 'Y'] for i in particles])
-    mom_z = sum([new_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
 
     plt.hist(sum_m, bins=50)
     # need to take cuts around those masses
@@ -240,12 +317,7 @@ def plot_result(data_frame):
     plt.ylabel('occurrences')
     plt.show()
     particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    particles = ['mu1_P', 'tauMu_P']
-    energy = sum([np.sqrt(new_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([new_frame[i + 'X'] for i in particles])
-    mom_y = sum([new_frame[i + 'Y'] for i in particles])
-    mom_z = sum([new_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     plt.hist(sum_m, bins=50)
     # need to take cuts around those masses
     plt.xlabel('$m_{\\mu\\mu}$')
@@ -255,28 +327,17 @@ def plot_result(data_frame):
 
 
 def get_missing_mass(data_frame):
-    particles_associations1 = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu']]
-    particles1 = ['Kminus_P', 'proton_P', 'mu1_P']
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu']]
     lb_energy = np.sqrt(data_frame['Lb_P'] ** 2 + masses['Lb'] ** 2)
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations1])
-    mom_x = sum([data_frame[i + 'X'] for i in particles1])
-    mom_y = sum([data_frame[i + 'Y'] for i in particles1])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles1])
-
-    missing_mass1 = masses['Lb'] - np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
-    print(missing_mass1.describe())
-    data_frame['missing_mass1'] = missing_mass1
+    missing_mass = masses['Lb'] - get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    print(missing_mass.describe())
+    data_frame['missing_mass'] = missing_mass
     return data_frame
 
 
 def get_dimuon_mass(data_frame):
     particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    particles = ['mu1_P', 'tauMu_P']
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
-    sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
+    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     data_frame['dimuon_mass'] = sum_m
     return data_frame
 
@@ -284,7 +345,22 @@ def get_dimuon_mass(data_frame):
 if __name__ == '__main__':
     a = load_data(add_branches())
     a.dropna(inplace=True)
-    df = reduce_background(a)
+    # df = reduce_background(a)
+    # df = df[df['Lb_pmu_ISOLATION_BDT1'] == -2]
+    # df = df[df['Lb_pmu_ISOLATION_BDT1'] < 0]
+    # df = df.reset_index(drop=True)
+    df = b_cleaning(a)
+    # plt.hist(df['pKmu_PT'], bins=50)
+    # plt.xlabel('pKmu_PT')
+    # plt.ylabel('occurrences')
+    # plt.show()
+    # plt.hist(df['mu1_PT'], bins=50)
+    # plt.xlabel('mu1_PT')
+    # plt.ylabel('occurrences')
+    # plt.show()
+    # df = df[df['pKmu_PT'] > 5000]
+    # df = df[df['mu1_PT'] > 2000]
+    # df = df.reset_index(drop=True)
     df = get_dimuon_mass(df)
     df = get_missing_mass(df)
     df, vec = retrieve_vertices(df)
@@ -292,4 +368,5 @@ if __name__ == '__main__':
     df = transverse_momentum(df, vec)
     df = line_plane_intersection(df)
     df = tau_momentum_mass(df)
-    plot_result(df)
+    # plot_result(df)
+    plot_b_result(df)
