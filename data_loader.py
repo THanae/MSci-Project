@@ -5,11 +5,11 @@ import pandas as pd
 
 def load_data(columns):
     columns = set(columns)
-    # file_names = ['Lb2pKmumu_2018_MagUp.root', 'Lb2pKmumu_2018_MagDown.root', 'Lb2pKmumu_2017_MagUp.root',
-    #               'Lb2pKmumu_2017_MagDown.root']
+    file_names = ['Lb2pKmumu_2018_MagUp.root', 'Lb2pKmumu_2018_MagDown.root', 'Lb2pKmumu_2017_MagUp.root',
+                  'Lb2pKmumu_2017_MagDown.root']
     # file_names = ['Lb2pKmumu_MC_MagUp.root', 'Lb2pKmumu_MC_MagDown.root']
     # file_names = ['B2Ksttaumu_MC_MagUp.root', 'B2Ksttaumu_MC_MagDown.root']
-    file_names = ['B2Kstmutau_MC_MagUp.root', 'B2Kstmutau_MC_MagDown.root']
+    # file_names = ['B2Kstmutau_MC_MagUp.root', 'B2Kstmutau_MC_MagDown.root']
     events_frame = pd.DataFrame()
     for f in file_names:
         file = uproot.open(f)
@@ -56,13 +56,15 @@ def add_branches():
            'proton_PIDp', 'Kminus_PIDK', 'mu1_PIDmu', 'tauMu_PIDmu', 'proton_PIDK', 'proton_PIDmu',
            'Kminus_PIDp', 'Kminus_PIDmu', 'mu1_PIDp', 'mu1_PIDK', 'tauMu_PIDp', 'tauMu_PIDK']
     bdt = ['Lb_pmu_ISOLATION_BDT1']
-    mc = ['Lb_MC_MOTHER_ID', 'pKmu_MC_MOTHER_ID', 'proton_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID', 'tauMu_MC_MOTHER_ID',
-          'Kminus_MC_MOTHER_ID', 'Lb_MC_GD_MOTHER_ID', 'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID',
-          'Kminus_MC_GD_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_ID', 'proton_ID', 'mu1_ID', 'tauMu_ID',
-          'proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
-          'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY', 'proton_MC_GD_MOTHER_KEY',
-          'proton_TRUEID', 'Kminus_TRUEID', 'mu1_TRUEID', 'tauMu_TRUEID']
-    # mc = ['mu1_ID']
+    # mc = ['Lb_MC_MOTHER_ID', 'pKmu_MC_MOTHER_ID', 'proton_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID', 'tauMu_MC_MOTHER_ID',
+    #       'Kminus_MC_MOTHER_ID', 'Lb_MC_GD_MOTHER_ID', 'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID',
+    #       'Kminus_MC_GD_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_ID', 'proton_ID', 'mu1_ID', 'tauMu_ID',
+    #       'proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
+    #       'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY', 'proton_MC_GD_MOTHER_KEY',
+    #       'proton_TRUEID', 'Kminus_TRUEID', 'mu1_TRUEID', 'tauMu_TRUEID']
+    mc = ['mu1_ID']
+    # true = ['pKmu_TRUEENDVERTEX_X', 'pKmu_TRUEENDVERTEX_Y', 'pKmu_TRUEENDVERTEX_Z', 'tauMu_TRUEP_X', 'tauMu_TRUEP_Y',
+    #         'tauMu_TRUEP_Z', 'pKmu_TRUEP_X', 'pKmu_TRUEP_Y', 'pKmu_TRUEP_Z']
     pt = ['pKmu_PT', 'mu1_PT']
     return lb + cleaning + proton + kminus + mu1 + mu2 + pkmu + errors + chi_squared + impact_parameter + pid + bdt + mc + pt
 
