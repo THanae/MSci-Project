@@ -6,11 +6,18 @@ from matplotlib.colors import LogNorm
 from background_reduction import reduce_background, b_cleaning
 from data_loader import load_data, add_branches
 from masses import masses, get_mass
+
 from error_propagation import error_propagation_intersection, error_propagation_transverse_momentum, \
     error_propagation_momentum_mass
+from matrix_calculations import find_determinant_of_dir_matrix, find_inverse_of_dir_matrix
 
 
 def retrieve_vertices(data_frame):
+    plt.hist(data_frame['Lb_FD_OWNPV'], bins=30, range=[0, 60])
+    plt.title('Lb_FD_OWNPV')
+    plt.show()
+    print(data_frame['Lb_FD_OWNPV'].describe())
+    print(np.percentile(data_frame['Lb_FD_OWNPV'], 90))
     plt.hist(data_frame['tauMu_P'], bins=200, range=[0, 200000], density=True)
     plt.title('Momenta of the the "taus"')
     plt.show()
@@ -20,6 +27,10 @@ def retrieve_vertices(data_frame):
         ts = data_frame.loc[i]
         pv_xyz = [ts['Lb_OWNPV_X'], ts['Lb_OWNPV_Y'], ts['Lb_OWNPV_Z']]
         end_xyz = [ts['pKmu_ENDVERTEX_X'], ts['pKmu_ENDVERTEX_Y'], ts['pKmu_ENDVERTEX_Z']]
+        # end_xyz = [ts['Lb_ENDVERTEX_X'], ts['Lb_ENDVERTEX_Y'], ts['Lb_ENDVERTEX_Z']]
+        # lb_endvertex = [ts['Lb_ENDVERTEX_X'], ts['Lb_ENDVERTEX_Y'], ts['Lb_ENDVERTEX_Z']]
+        # print(end_xyz, lb_endvertex)
+        # print(1-(np.array(lb_endvertex)/np.array(end_xyz)))
         # errors_pv = [ts['Lb_OWNPV_XERR'], ts['Lb_OWNPV_YERR'], ts['Lb_OWNPV_ZERR']]
         # errors_end = [ts['pKmu_REFP_COVXX'], ts['pKmu_REFP_COVYY'], ts['pKmu_REFP_COVZZ']]
         distance = np.linalg.norm(np.array(pv_xyz) - np.array(end_xyz))
@@ -39,6 +50,7 @@ def retrieve_vertices(data_frame):
     # data_frame = data_frame[data_frame['lb_distances'] < 25]
     # data_frame = data_frame[data_frame['lb_distances'] < 40]
     # data_frame = data_frame[data_frame['lb_distances'] > 25]
+    # data_frame = data_frame[data_frame['lb_distances'] > 40]
     # n, b, t = plt.hist(data_frame['Lb_FD_OWNPV'], bins=100, range=[0, 100])
     # plt.title('Lb flight distance for the jpsi data')
     # plt.ylabel('occurrences')
@@ -52,34 +64,24 @@ def line_plane_intersection(data_frame):
     for i in range(len(data_frame)):
         ts = data_frame.loc[i]
         end_xyz = [ts['pKmu_ENDVERTEX_X'], ts['pKmu_ENDVERTEX_Y'], ts['pKmu_ENDVERTEX_Z']]
+        # end_xyz = [ts['Lb_ENDVERTEX_X'], ts['Lb_ENDVERTEX_Y'], ts['Lb_ENDVERTEX_Z']]
         momentum_pkmu = [ts['pKmu_PX'], ts['pKmu_PY'], ts['pKmu_PZ']]
         momentum_tauMu = [ts['tauMu_PX'], ts['tauMu_PY'], ts['tauMu_PZ']]
         point_tau_mu = [ts['tauMu_REFPX'], ts['tauMu_REFPY'], ts['tauMu_REFPZ']]
         vector_plane_lb = ts['vectors']
-        vector_with_mu1 = momentum_pkmu
-        coefficient_matrix = [[vector_plane_lb[i], vector_with_mu1[i], - momentum_tauMu[i]] for i in range(3)]
-        determinant = -vector_plane_lb[0] * vector_with_mu1[1] * momentum_tauMu[2] - momentum_tauMu[0] * \
-                      vector_plane_lb[1] * vector_with_mu1[2] - vector_with_mu1[0] * momentum_tauMu[1] * \
-                      vector_plane_lb[2] + momentum_tauMu[0] * vector_with_mu1[1] * vector_plane_lb[2] + \
-                      vector_plane_lb[0] * momentum_tauMu[1] * vector_with_mu1[2] + vector_with_mu1[0] * \
-                      vector_plane_lb[1] * momentum_tauMu[2]
-        inverse_matrix = [[-momentum_tauMu[2] * vector_with_mu1[1] + momentum_tauMu[1] * vector_with_mu1[2],
-                           -momentum_tauMu[0] * vector_with_mu1[2] + momentum_tauMu[2] * vector_with_mu1[0],
-                           -momentum_tauMu[1] * vector_with_mu1[0] + momentum_tauMu[0] * vector_with_mu1[1]],
-                          [-momentum_tauMu[1] * vector_plane_lb[2] + momentum_tauMu[2] * vector_plane_lb[1],
-                           -momentum_tauMu[2] * vector_plane_lb[0] + momentum_tauMu[0] * vector_plane_lb[2],
-                           -momentum_tauMu[0] * vector_plane_lb[1] + momentum_tauMu[1] * vector_plane_lb[0]],
-                          [vector_plane_lb[1] * vector_with_mu1[2] - vector_plane_lb[2] * vector_with_mu1[1],
-                           vector_plane_lb[2] * vector_with_mu1[0] - vector_plane_lb[0] * vector_with_mu1[2],
-                           vector_plane_lb[0] * vector_with_mu1[1] - vector_plane_lb[1] * vector_with_mu1[0]]]
+        coefficient_matrix = [[vector_plane_lb[i], momentum_pkmu[i], - momentum_tauMu[i]] for i in range(3)]
+        determinant = find_determinant_of_dir_matrix(vector_plane_lb=vector_plane_lb, momentum_pkmu=momentum_pkmu,
+                                                     momentum_tauMu=momentum_tauMu)
+        inverse_matrix = find_inverse_of_dir_matrix(vector_plane_lb=vector_plane_lb, momentum_pkmu=momentum_pkmu,
+                                                    momentum_tauMu=momentum_tauMu, determinant=determinant)
         if np.linalg.matrix_rank(coefficient_matrix) == np.array(coefficient_matrix).shape[0]:
             ordinate = [point_tau_mu[j] - end_xyz[j] for j in range(3)]
             # possible_intersection = np.linalg.solve(coefficient_matrix, ordinate)
-            # possible_calculation_s = 1 / determinant * sum([inverse_matrix[0][j] * ordinate[j] for j in range(3)])
-            # possible_calculation_t = 1 / determinant * sum([inverse_matrix[1][j] * ordinate[j] for j in range(3)])
-            possible_calculation_u = 1 / determinant * sum([inverse_matrix[2][j] * ordinate[j] for j in range(3)])
+            # possible_calculation_s = sum([inverse_matrix[0][j] * ordinate[j] for j in range(3)])
+            # possible_calculation_t = sum([inverse_matrix[1][j] * ordinate[j] for j in range(3)])
+            possible_calculation_u = sum([inverse_matrix[2][j] * ordinate[j] for j in range(3)])
             possible_intersection = np.array(momentum_tauMu) * possible_calculation_u + np.array(point_tau_mu)
-            # sigma_i = error_propagation_intersection(data_frame=data_frame, inverse_A=inverse_matrix,
+            # sigma_i = error_propagation_intersection(data_frame=data_frame, inverse_A=inverse_matrix*determinant,
             #                                          determinant=determinant, ordinate=ordinate, i=i,
             #                                          possible_calculation_u=possible_calculation_u)
         else:
@@ -123,6 +125,7 @@ def tau_momentum_mass(data_frame):
     for i in range(len(data_frame)):
         temp_series = data_frame.loc[i]
         end_xyz = [temp_series['pKmu_ENDVERTEX_X'], temp_series['pKmu_ENDVERTEX_Y'], temp_series['pKmu_ENDVERTEX_Z']]
+        # end_xyz = [temp_series['Lb_ENDVERTEX_X'], temp_series['Lb_ENDVERTEX_Y'], temp_series['Lb_ENDVERTEX_Z']]
         tau_vector = temp_series['tau_decay_point'] - end_xyz
         vector = temp_series['vectors']
         tau_distance = np.linalg.norm(tau_vector)
@@ -130,23 +133,13 @@ def tau_momentum_mass(data_frame):
         # vector_plane_lb = temp_series['vectors']
         # vector_with_mu1 = [temp_series['pKmu_PX'], temp_series['pKmu_PY'], temp_series['pKmu_PZ']]
         # point_tau_mu = [temp_series['tauMu_REFPX'], temp_series['tauMu_REFPY'], temp_series['tauMu_REFPZ']]
-        # det = -vector_plane_lb[0] * vector_with_mu1[1] * momentum_tauMu[2] - momentum_tauMu[0] * \
-        #               vector_plane_lb[1] * vector_with_mu1[2] - vector_with_mu1[0] * momentum_tauMu[1] * \
-        #               vector_plane_lb[2] + momentum_tauMu[0] * vector_with_mu1[1] * vector_plane_lb[2] + \
-        #               vector_plane_lb[0] * momentum_tauMu[1] * vector_with_mu1[2] + vector_with_mu1[0] * \
-        #               vector_plane_lb[1] * momentum_tauMu[2]
-        # inverse_A = [[-momentum_tauMu[2] * vector_with_mu1[1] + momentum_tauMu[1] * vector_with_mu1[2],
-        #               -momentum_tauMu[0] * vector_with_mu1[2] + momentum_tauMu[2] * vector_with_mu1[0],
-        #               -momentum_tauMu[1] * vector_with_mu1[0] + momentum_tauMu[0] * vector_with_mu1[1]],
-        #              [-momentum_tauMu[1] * vector_plane_lb[2] + momentum_tauMu[2] * vector_plane_lb[1],
-        #               -momentum_tauMu[2] * vector_plane_lb[0] + momentum_tauMu[0] * vector_plane_lb[2],
-        #               -momentum_tauMu[0] * vector_plane_lb[1] + momentum_tauMu[1] * vector_plane_lb[0]],
-        #              [vector_plane_lb[1] * vector_with_mu1[2] - vector_plane_lb[2] * vector_with_mu1[1],
-        #               vector_plane_lb[2] * vector_with_mu1[0] - vector_plane_lb[0] * vector_with_mu1[2],
-        #               vector_plane_lb[0] * vector_with_mu1[1] - vector_plane_lb[1] * vector_with_mu1[0]]]
+        # det = find_determinant_of_dir_matrix(vector_plane_lb=vector_plane_lb, momentum_pkmu=vector_with_mu1,
+        #                                              momentum_tauMu=momentum_tauMu)
+        # inverse_A = find_inverse_of_dir_matrix(vector_plane_lb=vector_plane_lb, momentum_pkmu=vector_with_mu1,
+        #                                             momentum_tauMu=momentum_tauMu, determinant=det)
         # coefficient_matrix = [[vector_plane_lb[j], vector_with_mu1[j], - momentum_tauMu[j]] for j in range(3)]
         # ordinate = [point_tau_mu[j] - end_xyz[j] for j in range(3)]
-        # possible_calculation_u = 1 / det * sum([inverse_A[2][j] * ordinate[j] for j in range(3)])
+        # possible_calculation_u = sum([inverse_A[2][j] * ordinate[j] for j in range(3)])
         tau_distances_travelled.append(tau_distance)
         angle = np.arccos(np.dot(tau_vector, vector) / (np.linalg.norm(tau_vector) * np.linalg.norm(vector)))
         # angle_content = np.dot(tau_vector, vector) / (np.linalg.norm(tau_vector) * np.linalg.norm(vector))
@@ -155,7 +148,7 @@ def tau_momentum_mass(data_frame):
         unit_l = vector / np.linalg.norm(vector)
         p_transverse = np.linalg.norm(temp_series['transverse_momentum'])
         tau_mom = p_transverse / np.tan(angle) * unit_l + temp_series['transverse_momentum']
-        # sigma_tau = error_propagation_momentum_mass(data_frame=data_frame, inverse_A=inverse_A, determinant=det,
+        # sigma_tau = error_propagation_momentum_mass(data_frame=data_frame, inverse_A=inverse_A*det, determinant=det,
         #                                             i=i, angle=angle, unit_l=unit_l, p_transverse=p_transverse,
         #                                             bottom_content=bottom_content, angle_content=angle_content,
         #                                             possible_calculation_u=possible_calculation_u, ordinate=ordinate)
@@ -179,6 +172,7 @@ def tau_momentum_mass(data_frame):
     plt.title('Distance travelled by the "taus"')
     plt.show()
 
+    # np.save('distance_real_taus_less.npy', data_frame['tau_distances_travelled'].values)
     # np.save('distance_real_taus.npy', data_frame['tau_distances_travelled'].values)
     # np.save('distance_jpsi_taus.npy', data_frame['tau_distances_travelled'].values)
     # np.save('bMC_below_5_tau_distance.npy', data_frame['tau_distances_travelled'].values)
@@ -209,16 +203,12 @@ def plot_b_result(data_frame):
     sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     data_frame['b_mass'] = sum_m
 
+    # np.save('B_MC_mass.npy', data_frame['b_mass'].values)
+
     print('final length of the data', len(sum_m))
-    n, b, p = plt.hist(sum_m, bins=60, range=[3500, 10000])
+    n, b, p = plt.hist(sum_m, bins=100, range=[4000, 8000])
     plt.vlines(5279, ymin=0, ymax=np.max(n))
     plt.xlabel('$m_{B}$')
-    plt.ylabel('occurrences')
-    plt.show()
-    n, b, p = plt.hist(data_frame['Lb_M'], bins=60, range=[0, 10000])
-    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
-    plt.vlines(5279, ymin=0, ymax=np.max(n))
-    plt.xlabel('$m_{lb}$')
     plt.ylabel('occurrences')
     plt.show()
 
@@ -239,20 +229,25 @@ def plot_result(data_frame):
     plt.colorbar()
     plt.show()
 
+    # np.save('pkmutau_mass_cleaned.npy', data_frame['pkmutau_mass'].values)
+    # np.save('pkmumu_mass_cleaned.npy', data_frame['pkmumu_mass'].values)
+
     print('final length of the data', len(sum_m))
     minimum_mass_pkmutau = masses['proton'] + masses['K'] + masses['mu'] + masses['tau']
+    # n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[4000, 15000])
     n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
     # n, b, p = plt.hist(sum_m, bins=100, range=[0, 20000])
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
-    plt.vlines(minimum_mass_pkmutau, ymin=0, ymax=np.max(n))
+    # plt.vlines(minimum_mass_pkmutau, ymin=0, ymax=np.max(n))
     plt.xlabel('$m_{pK\\mu\\tau}$')
     plt.ylabel('occurrences')
     plt.show()
     minimum_mass_pkmumu = masses['proton'] + masses['K'] + masses['mu'] + masses['mu']
-    n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 6000])
+    # n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[5500, 5750])
+    n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[minimum_mass_pkmumu - 100, 9000])
     # n, b, p = plt.hist(data_frame['Lb_M'], bins=100, range=[0, 10000])
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
-    plt.vlines(minimum_mass_pkmumu, ymin=0, ymax=np.max(n))
+    # plt.vlines(minimum_mass_pkmumu, ymin=0, ymax=np.max(n))
     plt.xlabel('$m_{pK\\mu\\mu}$')
     plt.ylabel('occurrences')
     plt.show()
