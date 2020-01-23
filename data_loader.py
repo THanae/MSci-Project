@@ -1,12 +1,19 @@
 import uproot
 import numpy as np
 import pandas as pd
+from typing import List
 
 
-def load_data(columns):
+def load_data(columns: List[str]):
+    """
+    Load data sets with the specified column names
+    :param columns: columns to load
+    :return:
+    """
     columns = set(columns)
     file_names = ['Lb2pKmumu_2018_MagUp.root', 'Lb2pKmumu_2018_MagDown.root', 'Lb2pKmumu_2017_MagUp.root',
                   'Lb2pKmumu_2017_MagDown.root']
+    # file_names = ['Lb2pKmumu_2017_MagDown.root', 'Lb2pKmumu_2018_MagDown.root']
     # file_names = ['Lb2pKmumu_MC_MagUp.root', 'Lb2pKmumu_MC_MagDown.root']
     # file_names = ['B2Ksttaumu_MC_MagUp.root', 'B2Ksttaumu_MC_MagDown.root']
     # file_names = ['B2Kstmutau_MC_MagUp.root', 'B2Kstmutau_MC_MagDown.root']
@@ -15,17 +22,15 @@ def load_data(columns):
         file = uproot.open(f)
         events = file['DecayTree'] if 'B2' not in f else file['LbTuple/DecayTree']
         print(events.show())
-        # events_frame = events.pandas.df(columns)
         events_frame = pd.concat([events_frame, events.pandas.df(columns)], axis=0, ignore_index=True)
         print(events_frame)
-    # events_frame = events_frame.reset_index()
     print(events_frame.index)
     return events_frame
 
 
 def add_branches():
     """
-    Returns branches needed for analysis - for now returns branches used by Matt
+    Returns branches needed for analysis
     :return:
     """
     lb = ['Lb_M', 'Lb_ENDVERTEX_CHI2', 'Lb_DIRA_OWNPV', 'Lb_M', 'Lb_FD_OWNPV', 'Lb_OWNPV_X', 'Lb_OWNPV_Y', 'Lb_OWNPV_Z',
@@ -53,20 +58,22 @@ def add_branches():
     impact_parameter = ['proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV',
                         'pKmu_IPCHI2_OWNPV']
     pid = ['proton_PIDe', 'Kminus_PIDe', 'Kminus_PIDK', 'Kminus_PIDmu', 'proton_PIDK', 'proton_PIDp', 'proton_PIDmu',
-           'proton_PIDp', 'Kminus_PIDK', 'mu1_PIDmu', 'tauMu_PIDmu', 'proton_PIDK', 'proton_PIDmu',
-           'Kminus_PIDp', 'Kminus_PIDmu', 'mu1_PIDp', 'mu1_PIDK', 'tauMu_PIDp', 'tauMu_PIDK']
-    bdt = ['Lb_pmu_ISOLATION_BDT1']
-    # mc = ['Lb_MC_MOTHER_ID', 'pKmu_MC_MOTHER_ID', 'proton_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID', 'tauMu_MC_MOTHER_ID',
-    #       'Kminus_MC_MOTHER_ID', 'Lb_MC_GD_MOTHER_ID', 'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID',
-    #       'Kminus_MC_GD_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_ID', 'proton_ID', 'mu1_ID', 'tauMu_ID',
-    #       'proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
-    #       'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY', 'proton_MC_GD_MOTHER_KEY',
-    #       'proton_TRUEID', 'Kminus_TRUEID', 'mu1_TRUEID', 'tauMu_TRUEID']
-    mc = ['mu1_ID']
+           'proton_PIDp', 'Kminus_PIDK', 'mu1_PIDmu', 'tauMu_PIDmu', 'proton_PIDK', 'proton_PIDmu', 'proton_PIDd',
+           'Kminus_PIDp', 'Kminus_PIDmu', 'mu1_PIDp', 'mu1_PIDK', 'tauMu_PIDp', 'tauMu_PIDK', 'Kminus_PIDd']
+    bdt = ['Lb_pmu_ISOLATION_BDT1', 'Lb_pmu_ISOLATION_BDT2', 'Lb_pmu_ISOLATION_BDT3', 'Lb_pmu_ISOLATION_BDT4']
+    mc = ['Lb_MC_MOTHER_ID', 'pKmu_MC_MOTHER_ID', 'proton_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID', 'tauMu_MC_MOTHER_ID',
+          'Kminus_MC_MOTHER_ID', 'Lb_MC_GD_MOTHER_ID', 'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID',
+          'Kminus_MC_GD_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_ID', 'proton_ID', 'mu1_ID', 'tauMu_ID',
+          'proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
+          'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY', 'proton_MC_GD_MOTHER_KEY',
+          'proton_TRUEID', 'Kminus_TRUEID', 'mu1_TRUEID', 'tauMu_TRUEID', 'proton_IPCHI2_OWNPV',
+          'Kminus_TRACK_Type', 'proton_TRACK_Type', 'mu1_TRACK_Type', 'tauMu_TRACK_Type',
+          'Kminus_TRACK_Key', 'proton_TRACK_Key', 'mu1_TRACK_Key', 'tauMu_TRACK_Key']
+    mc = ['mu1_ID', 'tauMu_ID', 'Kminus_ID', 'proton_ID']
     # true = ['pKmu_TRUEENDVERTEX_X', 'pKmu_TRUEENDVERTEX_Y', 'pKmu_TRUEENDVERTEX_Z', 'tauMu_TRUEP_X', 'tauMu_TRUEP_Y',
     #         'tauMu_TRUEP_Z', 'pKmu_TRUEP_X', 'pKmu_TRUEP_Y', 'pKmu_TRUEP_Z']
     pt = ['pKmu_PT', 'mu1_PT']
-    return lb + cleaning + proton + kminus + mu1 + mu2 + pkmu + errors + chi_squared + impact_parameter + pid + bdt + mc + pt
+    return lb + cleaning + proton + kminus + mu1 + mu2 + pkmu + errors + chi_squared + impact_parameter + pid + bdt + mc + pt + ['Lb_pmu_TR1_PIDp', 'Lb_pmu_TR1_PIDK', 'Lb_pmu_TR1_PIDmu', 'Lb_pmu_TR1_PIDpi']
 
 
 def check_for_both_charges(data_frame):
@@ -137,4 +144,3 @@ def check_for_both_charges(data_frame):
 if __name__ == '__main__':
     a = load_data(add_branches())
     # check_for_both_charges(a)
-    print(a)
