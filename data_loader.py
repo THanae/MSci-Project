@@ -36,19 +36,23 @@ def add_branches():
     lb = ['Lb_M', 'Lb_ENDVERTEX_CHI2', 'Lb_DIRA_OWNPV', 'Lb_M', 'Lb_FD_OWNPV', 'Lb_OWNPV_X', 'Lb_OWNPV_Y', 'Lb_OWNPV_Z',
           'Lb_OWNPV_XERR', 'Lb_OWNPV_YERR', 'Lb_OWNPV_ZERR', 'Lb_ENDVERTEX_X', 'Lb_ENDVERTEX_Y', 'Lb_ENDVERTEX_Z',
           'Lb_ENDVERTEX_XERR', 'Lb_ENDVERTEX_YERR', 'Lb_ENDVERTEX_ZERR', 'Lb_PE', 'Lb_PX', 'Lb_PY', 'Lb_PZ', 'Lb_P',
-          'Lb_L0Global_Dec', 'Lb_FDCHI2_OWNPV']
+          'Lb_L0Global_Dec', 'Lb_FDCHI2_OWNPV', 'Lb_ENDVERTEX_CHI2']
     lb_pmu = ['Lb_pmu_TR1_PIDp', 'Lb_pmu_TR1_PIDK', 'Lb_pmu_TR1_PIDmu', 'Lb_pmu_TR1_PIDpi']
     pkmu = ['pKmu_P', 'pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z', 'pKmu_OWNPV_X', 'pKmu_OWNPV_Y',
             'pKmu_OWNPV_Z', 'pKmu_PE', 'pKmu_PX', 'pKmu_PY', 'pKmu_PZ', 'pKmu_PT', 'pKmu_OWNPV_CHI2',
             'pKmu_ENDVERTEX_CHI2']
     proton = ['proton_PE', 'proton_PX', 'proton_PY', 'proton_PZ', 'proton_P', 'proton_REFPX', 'proton_REFPY',
-              'proton_REFPZ', 'proton_PT']
+              'proton_REFPZ', 'proton_PT', 'proton_ProbNNp', 'proton_ProbNNe', 'proton_ProbNNk', 'proton_ProbNNpi',
+              'proton_ProbNNmu', 'proton_ProbNNd', 'proton_ProbNNghost']
     kminus = ['Kminus_PE', 'Kminus_PX', 'Kminus_PY', 'Kminus_PZ', 'Kminus_P', 'Kminus_REFPX', 'Kminus_REFPY',
-              'Kminus_REFPZ', 'Kminus_PT']
+              'Kminus_REFPZ', 'Kminus_PT', 'Kminus_ProbNNk', 'Kminus_ProbNNe', 'Kminus_ProbNNp', 'Kminus_ProbNNpi',
+              'Kminus_ProbNNmu', 'Kminus_ProbNNd', 'Kminus_ProbNNghost']
     mu1 = ['mu1_PE', 'mu1_PX', 'mu1_PY', 'mu1_PZ', 'mu1_P', 'mu1_REFPX', 'mu1_REFPY', 'mu1_REFPZ', 'mu1_L0Global_Dec',
-           'mu1_PT', 'mu1_isMuon']
+           'mu1_PT', 'mu1_isMuon', 'mu1_ProbNNe', 'mu1_ProbNNk', 'mu1_ProbNNp', 'mu1_ProbNNpi', 'mu1_ProbNNmu',
+           'mu1_ProbNNd', 'mu1_ProbNNghost']
     mu2 = ['tauMu_PE', 'tauMu_PX', 'tauMu_PY', 'tauMu_PZ', 'tauMu_P', 'tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ',
-           'tauMu_L0Global_Dec', 'tauMu_PT', 'tauMu_isMuon']
+           'tauMu_L0Global_Dec', 'tauMu_PT', 'tauMu_isMuon', 'tauMu_ProbNNe', 'tauMu_ProbNNk', 'tauMu_ProbNNp',
+           'tauMu_ProbNNpi', 'tauMu_ProbNNmu', 'tauMu_ProbNNghost']
     # error_pkmu_ref = ['pKmu_REFP_COVXX', 'pKmu_REFP_COVYY', 'pKmu_REFP_COVZZ', 'pKmu_REFP_COVXY', 'pKmu_REFP_COVXZ',
     #                   'pKmu_REFP_COVYZ']
     # error_taumu = ['tauMu_REFP_COVXX', 'tauMu_REFP_COVYY', 'tauMu_REFP_COVZZ', 'tauMu_REFP_COVXY', 'tauMu_REFP_COVXZ',

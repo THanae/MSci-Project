@@ -5,6 +5,7 @@ from matplotlib.colors import LogNorm
 
 from background_reduction import reduce_background, b_cleaning
 from data_loader import load_data, add_branches
+from ip_calculations import line_line_intersection, line_point_distance, return_all_ip
 from masses import masses, get_mass
 from error_propagation import error_propagation_intersection, error_propagation_transverse_momentum, \
     error_propagation_momentum_mass
@@ -103,13 +104,14 @@ def line_plane_intersection(data_frame):
     data_frame['tau_decay_point'] = intersections
     data_frame = data_frame[data_frame['muon_from_tau'] > 0]
     data_frame['angle_to_plane'] = angles_mu
-    # data_frame = data_frame[data_frame['angle_to_plane'] < 0.1]
+    # data_frame = data_frame[data_frame['angle_to_plane'] > 0.3]
     data_frame = data_frame.reset_index(drop=True)
     # np.save('angle_cleaned_data.npy', angles_mu)
     plt.hist(angles_mu, bins=100, range=[0, 4])
     plt.xlabel('Angle between tauMu and the plane')
     plt.ylabel('Occurrences')
     plt.show()
+    print((len(data_frame)))
 
     return data_frame
 
@@ -163,8 +165,8 @@ def tau_momentum_mass(data_frame):
         # coefficient_matrix = [[vector_plane_lb[j], vector_with_mu1[j], - momentum_tauMu[j]] for j in range(3)]
         # ordinate = [point_tau_mu[j] - end_xyz[j] for j in range(3)]
         # possible_calculation_u = sum([inverse_A[2][j] * ordinate[j] for j in range(3)])
-        # tau_distances_travelled.append(tau_distance * np.sign(np.dot(tau_vector, vector)))
-        tau_distances_travelled.append(tau_distance)
+        tau_distances_travelled.append(tau_distance * np.sign(np.dot(tau_vector, vector)))
+        # tau_distances_travelled.append(tau_distance)
         angle = np.arccos(np.dot(tau_vector, vector) / (np.linalg.norm(tau_vector) * np.linalg.norm(vector)))
         # angle_content = np.dot(tau_vector, vector) / (np.linalg.norm(tau_vector) * np.linalg.norm(vector))
         # bottom_content = (np.linalg.norm(tau_vector) * np.linalg.norm(vector))
@@ -196,6 +198,7 @@ def tau_momentum_mass(data_frame):
     plt.show()
 
     # np.save('distance_taus_cleaned_data.npy', data_frame['tau_distances_travelled'].values)
+    # np.save('distance_taus_pkmu_below_2300.npy', data_frame['tau_distances_travelled'].values)
     # np.save('distance_real_taus.npy', data_frame['tau_distances_travelled'].values)
     # np.save('distance_jpsi_taus.npy', data_frame['tau_distances_travelled'].values)
 
@@ -205,7 +208,57 @@ def tau_momentum_mass(data_frame):
     plt.colorbar()
     plt.show()
 
+    # data_frame = data_frame[data_frame['Lb_M'] < 5520]
+    # data_frame = data_frame.reset_index(drop=True)
+    data_frame['vector_muTau'] = data_frame[['tauMu_PX', 'tauMu_PY', 'tauMu_PZ']].values.tolist()
+    data_frame['tauMu_reference_point'] = data_frame[['tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']].values.tolist()
+    data_frame['pkmu_endvertex_point'] = data_frame[
+        ['pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z']].values.tolist()
+    data_frame['pkmu_direction'] = data_frame[['pKmu_PX', 'pKmu_PY', 'pKmu_PZ']].values.tolist()
+    data_frame['impact_parameter_thingy'] = line_point_distance(vector=data_frame['vector_muTau'],
+                                                                vector_point=data_frame['tauMu_reference_point'],
+                                                                point=data_frame['pkmu_endvertex_point'],
+                                                                direction=data_frame['pkmu_direction'])
+    plt.hist(data_frame['impact_parameter_thingy'], range=[-0.4, 0.4], bins=100)
+    plt.ylabel('occurrences')
+    plt.xlabel('IP*')
+    plt.show()
+    # np.save('ipstar_250_cleaned_data_nolb.npy', data_frame['impact_parameter_thingy'].values)
+
+    plt.hist2d(data_frame['impact_parameter_thingy'], data_frame['tau_distances_travelled'],
+               range=[[-0.1, 0.1], [-7.5, 7.5]], bins=50, norm=LogNorm())
+    plt.show()
+    # data_frame = data_frame[data_frame['tau_distances_travelled'] > -1]
+    # plt.hist(data_frame['pkmu_mass'], bins=100)
+    # plt.xlabel('pkmu mass')
+    # plt.savefig('pkmu_mass_all.png')
+    data_frame, ip_cols = return_all_ip(data_frame)
+    # data_frame = data_frame[data_frame['Lb_M'] < 5520]
+    # data_frame = data_frame.reset_index(drop=True)
+    # for col in ip_cols:
+    #     plt.hist(data_frame[col], range=[-0.4, 0.4], bins=100)
+    #     plt.ylabel('occurrences')
+    #     plt.xlabel(col)
+    #     plt.show()
+        # np.save(col + 'background_cleaned_data.npy', data_frame[col].values)
+
+    # plt.show()
+    # new_data = data_frame[data_frame['tau_distances_travelled'] < -0]
+    # plt.hist(new_data['pkmu_mass'], bins=100)
+    # plt.xlabel('pkmu mass below a tau distance of 0mm')
+    # plt.savefig('pkmu_mass_tau_dist_below_0.png')
+    # plt.show()
+    # np.save('ipstar_jpsi_sign.npy', data_frame['impact_parameter_thingy'].values)
+    # data_frame = data_frame[data_frame['impact_parameter_thingy'] > -0.1]
+    # data_frame = data_frame[data_frame['impact_parameter_thingy'] < 0.1]
+    data_frame = data_frame[data_frame['impact_parameter_thingy'] > -0.02]
+    # data_frame = data_frame[data_frame['pk_ip'] > 0]
+    # data_frame = data_frame[data_frame['pk_iptau'] > -0.15]
+    # data_frame = data_frame[data_frame['impact_parameter_thingy'] < 0.02]
+    # data_frame = data_frame[data_frame['impact_parameter_thingy'] > -0.02]
     # data_frame = data_frame[data_frame['tau_distances_travelled'] < 2]
+    # data_frame = data_frame[(data_frame['tau_distances_travelled'] > 0)]
+    # data_frame = data_frame[(data_frame['tau_distances_travelled'] > 0) & (data_frame['tau_distances_travelled'] < 4)]
     data_frame = data_frame.reset_index(drop=True)
     return data_frame
 
@@ -245,11 +298,66 @@ def plot_result(data_frame):
     :param data_frame:
     :return:
     """
-    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
-    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    data_frame['pkmutau_mass'] = sum_m
+    # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'pi']]
+    # data_frame['pkmupi_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    #
+    # n, b, p = plt.hist(data_frame['pkmupi_mass'], bins=100, range=[2000, 14000])
+    # plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
+    # plt.xlabel('$m_{pK\\mu\\pi}$')
+    # plt.ylabel('occurrences')
+    # plt.show()
+    # data_frame = data_frame[(data_frame['pkmupi_mass'] < masses['Lb']-150) | (data_frame['pkmupi_mass'] > masses['Lb']+150)]
+    # data_frame = data_frame[(data_frame['Lb_M'] < 5520) | (data_frame['Lb_M'] > 5720)]
+
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
     data_frame['pkmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    length_pkmumu_signal = len(
+        data_frame[(data_frame['pkmumu_mass'] > 5620 - 40) & (data_frame['pkmumu_mass'] < 5620 + 40)])
+    print(len(data_frame), length_pkmumu_signal / len(data_frame))
+    minimum_mass_pkmumu = masses['proton'] + masses['K'] + masses['mu'] + masses['mu']
+    # n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[5500, 5750])
+    # plt.figure(figsize=(3.5, 3), dpi=300)
+    n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[minimum_mass_pkmumu - 100, 9000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
+    plt.xlabel('$m_{pK\\mu\\mu}$')
+    plt.ylabel('occurrences')
+    # plt.tight_layout()
+    plt.show()
+    # comparison_data = data_frame[(data_frame['pkmumu_mass'] > 5620 - 40) & (data_frame['pkmumu_mass'] < 5620 + 40)]
+    # plt.hist(comparison_data['pk_mass'], bins=50)
+    # plt.xlabel('pk_mass')
+    # plt.show()
+
+    # for tau_masses in [50*x for x in range(36)]:
+    #     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
+    #     data_frame['pkmutau_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations, ms=[['tau', tau_masses]])
+    #     # np.save('pkmutau_mass_cleaned.npy', data_frame['pkmutau_mass'].values)
+    #     # np.save('pkmumu_mass_cleaned.npy', data_frame['pkmumu_mass'].values)
+    #     print('final length of the data', len(data_frame))
+    #     minimum_mass_pkmutau = masses['proton'] + masses['K'] + masses['mu'] + tau_masses
+    #     # n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[4000, 15000])
+    #     n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    #     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
+    #     plt.xlabel('$m_{pK\\mu X}$ with $m_{X}=$' + str(tau_masses) + 'MeV')
+    #     plt.ylabel('occurrences')
+    #     # plt.show()
+    #     plt.savefig(f'pkmuX_mass_{tau_masses}.png')
+    #     plt.close('all')
+
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
+    data_frame['pkmutau_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    # np.save('pkmutau_mass_cleaned.npy', data_frame['pkmutau_mass'].values)
+    # np.save('pkmumu_mass_cleaned.npy', data_frame['pkmumu_mass'].values)
+    print('final length of the data', len(data_frame))
+    minimum_mass_pkmutau = masses['proton'] + masses['K'] + masses['mu'] + masses['tau']
+    # n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[4000, 15000])
+    # plt.figure(figsize=(3.5, 3), dpi=300)
+    n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
+    plt.xlabel('$m_{pK\\mu\\tau}$')
+    plt.ylabel('occurrences')
+    # plt.tight_layout()
+    plt.show()
     plt.hist2d(data_frame['pkmumu_mass'], data_frame['pkmutau_mass'], bins=20, range=[[2000, 8000], [4000, 8000]],
                norm=LogNorm())
     # plt.hist2d(data_frame['Lb_M'], sum_m, bins=30, range=[[0, 10000], [0, 20000]], norm=LogNorm())
@@ -260,24 +368,6 @@ def plot_result(data_frame):
     plt.colorbar()
     plt.show()
 
-    # np.save('pkmutau_mass_cleaned.npy', data_frame['pkmutau_mass'].values)
-    # np.save('pkmumu_mass_cleaned.npy', data_frame['pkmumu_mass'].values)
-
-    print('final length of the data', len(sum_m))
-    minimum_mass_pkmutau = masses['proton'] + masses['K'] + masses['mu'] + masses['tau']
-    # n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[4000, 15000])
-    n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
-    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
-    plt.xlabel('$m_{pK\\mu\\tau}$')
-    plt.ylabel('occurrences')
-    plt.show()
-    minimum_mass_pkmumu = masses['proton'] + masses['K'] + masses['mu'] + masses['mu']
-    # n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[5500, 5750])
-    n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[minimum_mass_pkmumu - 100, 9000])
-    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n))
-    plt.xlabel('$m_{pK\\mu\\mu}$')
-    plt.ylabel('occurrences')
-    plt.show()
     new_frame = data_frame[(data_frame['pkmutau_mass'] < 6500) & (data_frame['pkmutau_mass'] > 4500)]
     plt.hist(new_frame['pKmu_ENDVERTEX_CHI2'], bins=50)
     plt.xlabel('pKmu_ENDVERTEX_CHI2')
@@ -287,11 +377,12 @@ def plot_result(data_frame):
     plt.xlabel('pKmu_IPCHI2_OWNPV')
     plt.ylabel('occurrences')
     plt.show()
-    plt.hist(get_mass(data_frame=data_frame, particles_associations=[['mu1_P', 'mu'], ['tau_P', 'tau']]), bins=50)
+    plt.hist(get_mass(data_frame=data_frame, particles_associations=[['mu1_P', 'mu'], ['tau_P', 'tau']]),
+             range=[1500, 7000], bins=50)
     plt.xlabel('$m_{\\mu\\tau}$')
     plt.ylabel('occurrences')
     plt.show()
-    plt.hist(get_mass(data_frame=data_frame, particles_associations=[['mu1_P', 'mu'], ['tauMu_P', 'mu']]), bins=50)
+    plt.hist(get_mass(data_frame=data_frame, particles_associations=[['mu1_P', 'mu'], ['tauMu_P', 'mu']]), range=[0, 6000], bins=120)
     plt.xlabel('$m_{\\mu\\mu}$')
     plt.ylabel('occurrences')
     plt.show()
@@ -314,8 +405,39 @@ if __name__ == '__main__':
     a = load_data(add_branches())
     a.dropna(inplace=True)
     df = reduce_background(a)
+    # plt.hist(df['dimuon_mass']**2, bins=100, range=[0, 1.5e7])
+    # plt.show()
+    # df = df[df['dimuon_mass']**2 < 6e6]
+    # df = df[df['dimuon_mass']**2 > 0.1e6]
+    # df = df[df['proton_P'] < 40000]
+    # df = df[df['Kminus_P'] < 60000]
+    # plt.hist(df['proton_P'], bins=50)
+    # plt.xlabel('proton_P')
+    # plt.show()
+    # plt.hist(df['Kminus_P'], bins=50)
+    # plt.xlabel('Kminus_P')
+    # plt.show()
+    # plt.hist2d(df['proton_P'], df['Kminus_P'], bins=75)
+    # plt.xlabel('proton_P')
+    # plt.ylabel('Kminus_P')
+    # plt.show()
+    # plt.hist2d(df['proton_P'], df['proton_PIDp'], bins=50)
+    # plt.xlabel('proton_P')
+    # plt.ylabel('proton_PIDp')
+    # plt.show()
+    # plt.hist2d(df['Kminus_P'], df['Kminus_PIDK'], bins=50)
+    # plt.xlabel('Kminus_P')
+    # plt.ylabel('Kminus_PIDK')
+    # plt.show()
     # df = b_cleaning(a)
     # df = a
+    # df['vector_muTau'] = df[['tauMu_PX', 'tauMu_PY', 'tauMu_PZ']].values.tolist()
+    # df['tauMu_reference_point'] = df[['tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']].values.tolist()
+    # df['pkmu_endvertex_point'] = df[['pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z']].values.tolist()
+    # df['impact_parameter_thingy'] = line_point_distance(vector=df['vector_muTau'], vector_point=df['tauMu_reference_point'],
+    #                                     point=df['pkmu_endvertex_point'])
+    # np.save('ipstar_bmc.npy', df['impact_parameter_thingy'].values)
+    # data_frame = data_frame[data_frame['impact_parameter_thingy'] > 0.05]
     df = df.reset_index(drop=True)
     df = get_dimuon_mass(df)
     df = retrieve_vertices(df)
