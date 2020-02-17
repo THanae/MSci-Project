@@ -3,13 +3,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from background_reduction import reduce_background, b_cleaning
+from background_reduction import reduce_background, b_cleaning, analyse_pkmu_for_2_muons2
 from data_loader import load_data, add_branches
 from ip_calculations import line_line_intersection, line_point_distance, return_all_ip
 from masses import masses, get_mass
 from error_propagation import error_propagation_intersection, error_propagation_transverse_momentum, \
     error_propagation_momentum_mass
 from matrix_calculations import find_determinant_of_dir_matrix, find_inverse_of_dir_matrix
+from mva import obtain_bdt
 
 
 def retrieve_vertices(data_frame):
@@ -106,7 +107,7 @@ def line_plane_intersection(data_frame):
     data_frame['angle_to_plane'] = angles_mu
     # data_frame = data_frame[data_frame['angle_to_plane'] > 0.3]
     data_frame = data_frame.reset_index(drop=True)
-    # np.save('angle_cleaned_data.npy', angles_mu)
+    # np.save('angle_cleaned_data.npy', data_frame['angle_to_plane'].values)
     plt.hist(angles_mu, bins=100, range=[0, 4])
     plt.xlabel('Angle between tauMu and the plane')
     plt.ylabel('Occurrences')
@@ -197,7 +198,7 @@ def tau_momentum_mass(data_frame):
     plt.title('Distance travelled by the "taus"')
     plt.show()
 
-    # np.save('distance_taus_cleaned_data.npy', data_frame['tau_distances_travelled'].values)
+    # np.save('distance_taus_super_cleaned_data.npy', data_frame['tau_distances_travelled'].values)
     # np.save('distance_taus_pkmu_below_2300.npy', data_frame['tau_distances_travelled'].values)
     # np.save('distance_real_taus.npy', data_frame['tau_distances_travelled'].values)
     # np.save('distance_jpsi_taus.npy', data_frame['tau_distances_travelled'].values)
@@ -236,11 +237,16 @@ def tau_momentum_mass(data_frame):
     # data_frame = data_frame[data_frame['Lb_M'] < 5520]
     # data_frame = data_frame.reset_index(drop=True)
     # for col in ip_cols:
-    #     plt.hist(data_frame[col], range=[-0.4, 0.4], bins=100)
+    #     df_to_plot = data_frame[np.sign(data_frame['proton_ID']) == np.sign(data_frame['mu1_ID'])]
+    #     plt.hist(np.load(col + 'Lb_MC_data.npy'), bins=100, range=[-0.4, 0.4], density=True, alpha=0.3, label='pkmumu MC data')
+    #     plt.hist(df_to_plot[col], range=[-0.4, 0.4], bins=50, label='cleaned data', density=True, histtype='step')
     #     plt.ylabel('occurrences')
-    #     plt.xlabel(col)
+    #     plt.xlabel(col + ' p and mu1 same charge')
+    #     plt.legend()
+    #     # plt.savefig(col + 'samesign.png')
     #     plt.show()
-        # np.save(col + 'background_cleaned_data.npy', data_frame[col].values)
+
+    # np.save(col + 'background_cleaned_data.npy', data_frame[col].values)
 
     # plt.show()
     # new_data = data_frame[data_frame['tau_distances_travelled'] < -0]
@@ -251,7 +257,11 @@ def tau_momentum_mass(data_frame):
     # np.save('ipstar_jpsi_sign.npy', data_frame['impact_parameter_thingy'].values)
     # data_frame = data_frame[data_frame['impact_parameter_thingy'] > -0.1]
     # data_frame = data_frame[data_frame['impact_parameter_thingy'] < 0.1]
-    data_frame = data_frame[data_frame['impact_parameter_thingy'] > -0.02]
+    # data_frame = data_frame[data_frame['impact_parameter_thingy'] > -0.02]
+    # data_frame = data_frame[(data_frame['Lb_M'] < 5520) | (data_frame['Lb_M'] > 5720)]
+    # np.save('angle_super_cleaned_data_nolb.npy', data_frame['angle_to_plane'].values)
+    # data_frame = data_frame[(data_frame['Lb_M'] < 5520) | (data_frame['Lb_M'] > 5720)]
+    # np.save('distance_taus_super_cleaned_data_nolb.npy', data_frame['tau_distances_travelled'].values)
     # data_frame = data_frame[data_frame['pk_ip'] > 0]
     # data_frame = data_frame[data_frame['pk_iptau'] > -0.15]
     # data_frame = data_frame[data_frame['impact_parameter_thingy'] < 0.02]
@@ -259,6 +269,19 @@ def tau_momentum_mass(data_frame):
     # data_frame = data_frame[data_frame['tau_distances_travelled'] < 2]
     # data_frame = data_frame[(data_frame['tau_distances_travelled'] > 0)]
     # data_frame = data_frame[(data_frame['tau_distances_travelled'] > 0) & (data_frame['tau_distances_travelled'] < 4)]
+
+    real_taus, fake_taus = np.load('distance_real_taus_plus_minus.npy'), np.load('distance_fake_taus_plus_minus.npy')
+    _bins, _range = 200, [-10, 10]
+    n, b, p = plt.hist(fake_taus, bins=_bins, range=_range, density=True, label='pkmumu MC data', alpha=0.3)
+    n, b, p = plt.hist(real_taus, bins=_bins, range=_range, density=True, label='B MC data', histtype='step')
+    n, b, p = plt.hist(data_frame['tau_distances_travelled'], bins=20, range=_range, density=True, label='cleaned data',
+                       histtype='step')
+    plt.legend()
+    plt.xlabel('Tau FD')
+    plt.show()
+    plt.hist(data_frame['Lb_FD_OWNPV'], bins=30, range=[0, 60])
+    plt.title('Lb_FD_OWNPV')
+    plt.show()
     data_frame = data_frame.reset_index(drop=True)
     return data_frame
 
@@ -290,6 +313,12 @@ def plot_b_result(data_frame):
     plt.xlabel('$m_{B}$')
     plt.ylabel('occurrences')
     plt.show()
+    # csv_storage = data_frame[['tau_distances_travelled', 'impact_parameter_thingy']]
+    # csv_storage = data_frame[
+    #     ['tau_distances_travelled', 'impact_parameter_thingy', 'pKmu_ENDVERTEX_CHI2', 'Lb_pmu_ISOLATION_BDT1',
+    #      'proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV',
+    #      'Lb_FDCHI2_OWNPV']]
+    # csv_storage.to_csv('b_mc_data2.csv')
 
 
 def plot_result(data_frame):
@@ -298,6 +327,14 @@ def plot_result(data_frame):
     :param data_frame:
     :return:
     """
+    # df_for_bdt = data_frame[['tau_distances_travelled', 'impact_parameter_thingy']]
+    # df_for_bdt = data_frame[['tau_distances_travelled', 'impact_parameter_thingy', 'pKmu_ENDVERTEX_CHI2', 'Lb_pmu_ISOLATION_BDT1',
+    #      'proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV',
+    #      'Lb_FDCHI2_OWNPV']]
+    # bdt = obtain_bdt()
+    # predictions = bdt.decision_function(df_for_bdt)
+    # data_frame['predictions_from_bdt'] = predictions
+    # data_frame = data_frame[data_frame['predictions_from_bdt'] > 0.8]
     # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'pi']]
     # data_frame['pkmupi_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     #
@@ -352,9 +389,45 @@ def plot_result(data_frame):
     minimum_mass_pkmutau = masses['proton'] + masses['K'] + masses['mu'] + masses['tau']
     # n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[4000, 15000])
     # plt.figure(figsize=(3.5, 3), dpi=300)
-    n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    n, b, p = plt.hist(
+        data_frame[(data_frame['pkmumu_mass'] < 5620 - 40) | (data_frame['pkmumu_mass'] > 5620 + 40)]['pkmutau_mass'],
+        bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    # n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
     plt.xlabel('$m_{pK\\mu\\tau}$')
+    plt.ylabel('occurrences')
+    # plt.tight_layout()
+    plt.show()
+    # csv_storage = data_frame[data_frame['pkmutau_mass'] > 8000]
+    # csv_storage = csv_storage[['tau_distances_travelled', 'impact_parameter_thingy']]
+    # csv_storage = csv_storage[
+    #     ['tau_distances_travelled', 'impact_parameter_thingy', 'pKmu_ENDVERTEX_CHI2', 'Lb_pmu_ISOLATION_BDT1',
+    #      'proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV',
+    #      'Lb_FDCHI2_OWNPV']]
+    # csv_storage.to_csv('cleaned_data_background2.csv')
+    p_and_mu1_same_charge = data_frame[np.sign(data_frame['proton_ID']) == np.sign(data_frame['mu1_ID'])]
+    p_and_mu1_diff_charge = data_frame[np.sign(data_frame['proton_ID']) != np.sign(data_frame['mu1_ID'])]
+    n, b, p = plt.hist(p_and_mu1_same_charge['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
+    plt.xlabel('$m_{pK\\mu\\tau}$ where p and mu have the same charge')
+    plt.ylabel('occurrences')
+    # plt.tight_layout()
+    plt.show()
+    n, b, p = plt.hist(p_and_mu1_diff_charge['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
+    plt.xlabel('$m_{pK\\mu\\tau}$ where p and mu have opposite charges')
+    plt.ylabel('occurrences')
+    # plt.tight_layout()
+    plt.show()
+    n, b, p = plt.hist(p_and_mu1_same_charge['pkmumu_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
+    plt.xlabel('$m_{pK\\mu\\mu}$ where p and mu1 have the same charge')
+    plt.ylabel('occurrences')
+    # plt.tight_layout()
+    plt.show()
+    n, b, p = plt.hist(p_and_mu1_diff_charge['pkmumu_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
+    plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
+    plt.xlabel('$m_{pK\\mu\\mu}$ where p and mu1 have opposite charges')
     plt.ylabel('occurrences')
     # plt.tight_layout()
     plt.show()
@@ -367,6 +440,7 @@ def plot_result(data_frame):
     plt.axhline(masses['Lb'])
     plt.colorbar()
     plt.show()
+    analyse_pkmu_for_2_muons2(data_frame, True)
 
     new_frame = data_frame[(data_frame['pkmutau_mass'] < 6500) & (data_frame['pkmutau_mass'] > 4500)]
     plt.hist(new_frame['pKmu_ENDVERTEX_CHI2'], bins=50)
@@ -382,7 +456,8 @@ def plot_result(data_frame):
     plt.xlabel('$m_{\\mu\\tau}$')
     plt.ylabel('occurrences')
     plt.show()
-    plt.hist(get_mass(data_frame=data_frame, particles_associations=[['mu1_P', 'mu'], ['tauMu_P', 'mu']]), range=[0, 6000], bins=120)
+    plt.hist(get_mass(data_frame=data_frame, particles_associations=[['mu1_P', 'mu'], ['tauMu_P', 'mu']]),
+             range=[0, 6000], bins=120)
     plt.xlabel('$m_{\\mu\\mu}$')
     plt.ylabel('occurrences')
     plt.show()
