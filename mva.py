@@ -2,15 +2,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, auc
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import cross_val_score
 
 
-def obtain_bdt(to_plot: bool = False):
-    np.random.seed(5521)
+def get_x_and_y():
     X2 = pd.read_csv('cleaned_data_background2.csv')
-    X1 = pd.read_csv('b_mc_data2.csv')[: np.int(2 * len(X2))]
+    # X1 = pd.read_csv('b_mc_data2.csv')[: np.int(2 * len(X2))]
+    X1 = pd.read_csv('b_mc_data2.csv')
     X = pd.concat([X1, X2], axis=0, ignore_index=True)
     y1 = np.ones(len(X1))
     y2 = np.zeros(len(X2))
@@ -21,18 +21,36 @@ def obtain_bdt(to_plot: bool = False):
     X = X.sample(frac=1).reset_index(drop=True)
     y = X['label']
     X = X.drop(columns='label')
-    n_split = np.int(4*len(X) / 5)
+    return X, y
+
+
+def obtain_bdt(to_plot=False):
+    np.random.seed(5521)
+    X, y = get_x_and_y()
+    n_split = np.int(4 * len(X) / 5)
     X_train, X_test = X[:n_split], X[n_split:]
     y_train, y_test = y[:n_split], y[n_split:]
     print(len(y_train), len(y_test))
 
     bdt = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2), algorithm="SAMME", n_estimators=500,
                              learning_rate=0.01)
-    scores = cross_val_score(bdt, X, y, cv=5)
+    full_sample_weight = np.zeros_like(y)
+    full_sample_weight[y == 0] = 1 / (y == 0).sum()
+    full_sample_weight[y == 1] = 1 / (y == 1).sum()
+    scores = cross_val_score(bdt, X, y, cv=6, fit_params={'sample_weight': full_sample_weight})
     print(scores)
     print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    bdt.fit(X_train, y_train)
+
+    sample_weight = np.zeros_like(y_train)
+    sample_weight[y_train == 0] = 1 / (y_train == 0).sum()
+    sample_weight[y_train == 1] = 1 / (y_train == 1).sum()
+    bdt.fit(X_train, y_train, sample_weight=sample_weight)
     # print(bdt.get_params(), bdt.feature_importances_, bdt.estimator_weights_, bdt.classes_)
+
+    test_sample_weight = np.zeros_like(y_test)
+    test_sample_weight[y_test == 0] = 1 / (y_test == 0).sum()
+    test_sample_weight[y_test == 1] = 1 / (y_test == 1).sum()
+    print(confusion_matrix(y_test, bdt.predict(X_test), labels=[0, 1], sample_weight=test_sample_weight))
 
     if to_plot:
         test_errors = []
