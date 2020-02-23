@@ -3,61 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from data_loader import load_data, add_branches
-from ip_calculations import line_point_distance, return_all_ip
 from masses import masses, get_mass
 from plotting_functions import plot_compare_data, plot_columns
-
-
-def analyse_pkmu_mass(data_frame, to_plot: bool):
-    """
-    Analyse the pkmu mass of the data set
-    :param data_frame:
-    :param to_plot: if True, the pkmu mass is plotted, along with other parameters
-    :return:
-    """
-    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu']]
-    data_frame['pkmu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    compare_data = data_frame[(data_frame['pkmu_mass'] < 2300) & (data_frame['pkmu_mass'] > 2200)]
-    background_selection = data_frame[(data_frame['pkmu_mass'] > 2300) | (data_frame['pkmu_mass'] < 2200)]
-    total_charge = np.sign(data_frame['Kminus_ID']) + np.sign(data_frame['proton_ID']) + np.sign(data_frame['mu1_ID'])
-    print(total_charge.describe())
-    total_charge = np.sign(data_frame['Kminus_ID']) + np.sign(data_frame['proton_ID']) + np.sign(
-        data_frame['mu1_ID']) + np.sign(data_frame['tauMu_ID'])
-    print(total_charge.describe(), 'total charge')
-    if to_plot:
-        n, b, p = plt.hist(data_frame['pkmu_mass'], bins=100, range=[1500, 5500])
-        plt.vlines(masses['Lc'], 0, np.max(n) * 0.9)  # mass of lambda c
-        # plt.fill_between([2190, 2310], 0, np.max(n), color='red', alpha=0.3)  # [2828, 3317]
-        plt.xlabel('$m_{pK\\mu}$')
-        plt.ylabel('occurrences')
-        plt.show()
-
-        selection_range = 100
-        for p in [['proton', 'p'], ['Kminus', 'K'], ['mu1', 'mu'], ['tauMu', 'mu']]:
-            pids = ['p', 'K', 'mu']
-            pids.remove(p[1])
-            plot_compare_data(compare_data, background_selection, histogram_range=selection_range,
-                              columns_to_plot=[p[0] + '_PID' + p[1], [p[0] + '_PID' + p[1], p[0] + '_PID' + pids[0]],
-                                               [p[0] + '_PID' + p[1], p[0] + '_PID' + pids[1]]], signal_name='lambda_0')
-        potential_lc = data_frame[data_frame['pkmu_mass'] < 2300]
-        artifact_region = data_frame[(data_frame['pkmu_mass'] > 2300) & (data_frame['pkmu_mass'] < 2800)]
-        potential_lc = potential_lc.reset_index(drop=True)
-        artifact_region = artifact_region.reset_index(drop=True)
-        for _df, _name in [[potential_lc, 'potential lc region'], [artifact_region, 'artifact region']]:
-            _df['vector_muTau'] = _df[['tauMu_PX', 'tauMu_PY', 'tauMu_PZ']].values.tolist()
-            _df['tauMu_reference_p'] = _df[['tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']].values.tolist()
-            _df['pkmu_endvertex_p'] = _df[['pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z']].values.tolist()
-            _df_lpd = line_point_distance(vector=_df['vector_muTau'], vector_point=_df['tauMu_reference_p'],
-                                          point=_df['pkmu_endvertex_p'])
-            plt.hist(_df_lpd, range=[0, 4], bins=200)
-            plt.xlabel(_name)
-            plt.show()
-    data_frame = data_frame[data_frame['pkmu_mass'] > 2800]
-    # data_frame = data_frame[(data_frame['pkmu_mass'] < masses['Lc'] + 25) & (data_frame['pkmu_mass'] > masses['Lc'] - 25)]
-    # data_frame = data_frame[(data_frame['pkmu_mass'] > 2625 -50) & (data_frame['pkmu_mass'] < 2625+50)]
-    # data_frame = data_frame[(data_frame['pkmu_mass'] > 2300) & (data_frame['pkmu_mass'] < 2800)]
-    return data_frame
 
 
 def analyse_pkmu_for_2_muons(data_frame, to_plot: bool):
@@ -71,13 +18,10 @@ def analyse_pkmu_for_2_muons(data_frame, to_plot: bool):
     print(len(data_frame[np.sign(data_frame['proton_ID']) != np.sign(data_frame['Kminus_ID'])]))
     print(len(data_frame[np.sign(data_frame['mu1_ID']) != np.sign(data_frame['tauMu_ID'])]))
     data_frame = data_frame.reset_index(drop=True)
-    data_frame, ip_cols = return_all_ip(data_frame)
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton']]
     data_frame['pk_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     particles_associations = [['Kminus_P', 'proton'], ['proton_P', 'K']]
     data_frame['pkswap_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    # data_frame = data_frame[(data_frame['pk_mass'] > 1620) | (data_frame['pk_mass'] < 1420)]
-    # data_frame = data_frame[(data_frame['pk_mass'] > 1900)]
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu']]
     data_frame['pkmu_mass1'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['tauMu_P', 'mu']]
@@ -95,32 +39,27 @@ def analyse_pkmu_for_2_muons(data_frame, to_plot: bool):
     particles_associations = [['Kminus_P', 'K'], ['tauMu_P', 'mu']]
     data_frame['kmu_mass2'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     pkmu_mass_lc_plus = data_frame[(data_frame['proton_ID'] == 2212) & (data_frame['Kminus_ID'] == -321)]
-    pkmu_mass_lc_plus['pkmu_mass'] = pkmu_mass_lc_plus['pkmu_mass1']
-    pkmu_mass_lc_plus['pkmuswap_mass'] = pkmu_mass_lc_plus['pkmuswap_mass1']
-    pkmu_mass_lc_plus['pmu_mass'] = pkmu_mass_lc_plus['pmu_mass1']
-    pkmu_mass_lc_plus['kmu_mass'] = pkmu_mass_lc_plus['kmu_mass1']
-    pkmu_mass_lc_plus['mu_id'] = pkmu_mass_lc_plus['mu1_ID']
-    pkmu_mass_lc_plus['mu_PID'] = pkmu_mass_lc_plus['mu1_PIDmu']
+    pkmu_mass_lc_plus.loc[:, 'pkmu_mass'] = pkmu_mass_lc_plus.loc[:, 'pkmu_mass1']
+    pkmu_mass_lc_plus.loc[:, 'pkmuswap_mass'] = pkmu_mass_lc_plus.loc[:, 'pkmuswap_mass1']
+    pkmu_mass_lc_plus.loc[:, 'pmu_mass'] = pkmu_mass_lc_plus.loc[:, 'pmu_mass1']
+    pkmu_mass_lc_plus.loc[:, 'kmu_mass'] = pkmu_mass_lc_plus.loc[:, 'kmu_mass1']
+    pkmu_mass_lc_plus.loc[:, 'mu_PID'] = pkmu_mass_lc_plus.loc[:, 'mu1_PIDmu']
     index_mask = (pkmu_mass_lc_plus[pkmu_mass_lc_plus['tauMu_ID'] == -13]).index
     pkmu_mass_lc_plus.loc[index_mask, 'pkmu_mass'] = pkmu_mass_lc_plus.loc[index_mask, 'pkmu_mass2']
     pkmu_mass_lc_plus.loc[index_mask, 'pkmuswap_mass'] = pkmu_mass_lc_plus.loc[index_mask, 'pkmuswap_mass2']
     pkmu_mass_lc_plus.loc[index_mask, 'pmu_mass'] = pkmu_mass_lc_plus.loc[index_mask, 'pmu_mass2']
     pkmu_mass_lc_plus.loc[index_mask, 'kmu_mass'] = pkmu_mass_lc_plus.loc[index_mask, 'kmu_mass2']
-    pkmu_mass_lc_plus.loc[index_mask, 'mu_id'] = pkmu_mass_lc_plus.loc[index_mask, 'tauMu_ID']
     pkmu_mass_lc_plus.loc[index_mask, 'mu_PID'] = pkmu_mass_lc_plus.loc[index_mask, 'tauMu_PIDmu']
-    pkmu_mass_lc_plus.loc[index_mask, 'pk_iptauMu'] = pkmu_mass_lc_plus.loc[index_mask, 'pk_ipmu1']
-    print((pkmu_mass_lc_plus['mu_id']).describe())
     pkmu_mass_lc_minus = data_frame[(data_frame['proton_ID'] == -2212) & (data_frame['Kminus_ID'] == +321)]
-    pkmu_mass_lc_minus['pkmu_mass'] = pkmu_mass_lc_minus['pkmu_mass1']
-    pkmu_mass_lc_minus['pkmuswap_mass'] = pkmu_mass_lc_minus['pkmuswap_mass1']
-    pkmu_mass_lc_minus['pmu_mass'] = pkmu_mass_lc_minus['pmu_mass1']
-    pkmu_mass_lc_minus['kmu_mass'] = pkmu_mass_lc_minus['kmu_mass1']
+    pkmu_mass_lc_minus.loc[:, 'pkmu_mass'] = pkmu_mass_lc_minus.loc[:, 'pkmu_mass1']
+    pkmu_mass_lc_minus.loc[:, 'pkmuswap_mass'] = pkmu_mass_lc_minus.loc[:, 'pkmuswap_mass1']
+    pkmu_mass_lc_minus.loc[:, 'pmu_mass'] = pkmu_mass_lc_minus.loc[:, 'pmu_mass1']
+    pkmu_mass_lc_minus.loc[:, 'kmu_mass'] = pkmu_mass_lc_minus.loc[:, 'kmu_mass1']
     index_mask = (pkmu_mass_lc_minus[pkmu_mass_lc_minus['tauMu_ID'] == +13]).index
     pkmu_mass_lc_minus.loc[index_mask, 'pkmu_mass'] = pkmu_mass_lc_minus.loc[index_mask, 'pkmu_mass2']
     pkmu_mass_lc_minus.loc[index_mask, 'pkmuswap_mass'] = pkmu_mass_lc_minus.loc[index_mask, 'pkmuswap_mass2']
     pkmu_mass_lc_minus.loc[index_mask, 'pmu_mass'] = pkmu_mass_lc_minus.loc[index_mask, 'pmu_mass2']
     pkmu_mass_lc_minus.loc[index_mask, 'kmu_mass'] = pkmu_mass_lc_minus.loc[index_mask, 'kmu_mass2']
-    pkmu_mass_lc_minus.loc[index_mask, 'pk_iptauMu'] = pkmu_mass_lc_minus.loc[index_mask, 'pk_ipmu1']
 
     # pkmu_mass_lc_plus = pkmu_mass_lc_plus[pkmu_mass_lc_plus['pkmu_mass'] < 2800]
     # plt.hist(pkmu_mass_lc_plus['mu_PID'], bins=50)
@@ -149,57 +88,48 @@ def analyse_pkmu_for_2_muons(data_frame, to_plot: bool):
     # plt.hist(pkmu_mass_lc_minus['pmu_mass'], bins=100, range=[1000, 2500])
     # plt.xlabel('$m_{p^{-}\\mu^{+}}$')
     # plt.show()
-    # plt.hist(pkmu_mass_lc_plus['pk_iptauMu'], bins=100, range=[-0.5, 0.5], density=True, histtype='step')
-    # plt.hist(np.load('pk_iptauMu' + 'Lb_MC_data.npy'), bins=100, range=[-0.5, 0.5], density=True, alpha=0.3)
-    # plt.xlabel('pk_ipmu2')
-    # plt.show()
-    # plt.hist(pkmu_mass_lc_minus['pk_iptauMu'], bins=100, range=[-0.5, 0.5], density=True, histtype='step')
-    # plt.hist(np.load('pk_iptauMu' + 'Lb_MC_data.npy'), bins=100, range=[-0.5, 0.5], density=True, alpha=0.3)
-    # plt.xlabel('pk_ipmu2')
-    # plt.show()
     # plt.hist(pkmu_mass_lc_plus['pk_mass'], bins=100, range=[1400, 2400])
     # plt.xlabel('$m_{p^{+}K^{-}}$')
     # plt.show()
     # plt.hist(pkmu_mass_lc_minus['pk_mass'], bins=100, range=[1400, 2400])
     # plt.xlabel('$m_{p^{-}K^{+}}$')
     # plt.show()
-    # plt.hist(pkmu_mass_lc_plus['pkswap_mass'], bins=100, range=[1400, 2400])
-    # plt.xlabel('$m_{p^{+}K^{-}}$ swap')
-    # plt.show()
-    # plt.hist(pkmu_mass_lc_minus['pkswap_mass'], bins=100, range=[1400, 2400])
-    # plt.xlabel('$m_{p^{-}K^{+}}$ swap')
-    # plt.show()
     # plt.hist(pkmu_mass_lc_plus['kmu_mass'], bins=100, range=[400, 2400])
-    # plt.xlabel('$m_{kmu}$')
+    # plt.xlabel('$m_{k^{-}\\mu^{-}}$')
     # plt.show()
     # plt.hist(pkmu_mass_lc_minus['kmu_mass'], bins=100, range=[400, 2400])
-    # plt.xlabel('$m_{kmu}$')
+    # plt.xlabel('$m_{k^{+}\\mu^{+}}$')
     # plt.show()
-    # plt.hist2d(pkmu_mass_lc_plus['pk_mass'], pkmu_mass_lc_plus['pkmu_mass'], bins=50,
-    #            range=[[1400, 2400], [1500, 2500]])
-    # plt.ylabel('$m_{p^{+}K^{-}\\mu^{-}}$')
+    # print(len(data_frame))
+    # print(len(pkmu_mass_lc_plus[(pkmu_mass_lc_plus['pk_mass'] > 1505) & (pkmu_mass_lc_plus['pk_mass'] < 1522.5)]))
+    # print(len(pkmu_mass_lc_plus[(pkmu_mass_lc_plus['pkmu_mass'] > 2275) & (pkmu_mass_lc_plus['pkmu_mass'] < 2297.5)]))
+    # print(len(pkmu_mass_lc_plus[
+    #               ((pkmu_mass_lc_plus['pkmu_mass'] > 2275) & (pkmu_mass_lc_plus['pkmu_mass'] < 2297.5)) & (
+    #                           (pkmu_mass_lc_plus['pk_mass'] > 1505) & (pkmu_mass_lc_plus['pk_mass'] < 1522.5))]))
+    # print(len(pkmu_mass_lc_minus[(pkmu_mass_lc_minus['pk_mass'] > 1505) & (pkmu_mass_lc_minus['pk_mass'] < 1522.5)]))
+    # print(len(pkmu_mass_lc_minus[(pkmu_mass_lc_minus['pkmu_mass'] > 2275) & (pkmu_mass_lc_minus['pkmu_mass'] < 2297.5)]))
+    # print(len(pkmu_mass_lc_minus[
+    #               ((pkmu_mass_lc_minus['pkmu_mass'] > 2275) & (pkmu_mass_lc_minus['pkmu_mass'] < 2297.5)) & (
+    #                       (pkmu_mass_lc_minus['pk_mass'] > 1505) & (pkmu_mass_lc_minus['pk_mass'] < 1522.5))]))
+    # plt.hist2d(pkmu_mass_lc_plus['pk_mass'], pkmu_mass_lc_plus['pkmu_mass'], bins=40,
+    #            range=[[1400, 2100], [1600, 2500]])
+    # plt.ylabel('$m_{p^{+}K^{-}\\mu^{+}}$')
     # plt.xlabel('$m_{p^{+}K^{-}}$')
     # plt.show()
-    # plt.hist2d(pkmu_mass_lc_minus['pk_mass'], pkmu_mass_lc_minus['pkmu_mass'], bins=50,
-    #            range=[[1400, 2200], [1600, 2500]])
-    # plt.ylabel('$m_{p^{-}K^{+}\\mu^{+}}$')
+    # plt.hist2d(pkmu_mass_lc_minus['pk_mass'], pkmu_mass_lc_minus['pkmu_mass'], bins=40,
+    #            range=[[1400, 2100], [1600, 2500]])
+    # plt.ylabel('$m_{p^{-}K^{+}\\mu^{-}}$')
     # plt.xlabel('$m_{p^{-}K^{+}}$')
-    # plt.show()
-    # plt.hist2d(pkmu_mass_lc_plus['pkswap_mass'], pkmu_mass_lc_plus['pkmuswap_mass'], bins=50,
-    #            range=[[1400, 2400], [1500, 2500]])
-    # plt.ylabel('$m_{p^{+}K^{-}\\mu^{-}}$ swap')
-    # plt.xlabel('$m_{p^{+}K^{-}}$ swap')
-    # plt.show()
-    # plt.hist2d(pkmu_mass_lc_minus['pkswap_mass'], pkmu_mass_lc_minus['pkmuswap_mass'], bins=50,
-    #            range=[[1400, 2200], [1600, 2500]])
-    # plt.ylabel('$m_{p^{-}K^{+}\\mu^{+}}$ swap')
-    # plt.xlabel('$m_{p^{-}K^{+}}$ swap')
     # plt.show()
     # plt.hist2d(pkmu_mass_lc_plus['kmu_mass'], pkmu_mass_lc_plus['pkmu_mass'], bins=50,
     #            range=[[400, 2400], [1500, 2500]])
+    # plt.ylabel('$m_{K^{-}\\mu^{-}}$')
+    # plt.xlabel('$m_{p^{+}K^{-}\\mu^{-}}$')
     # plt.show()
     # plt.hist2d(pkmu_mass_lc_minus['kmu_mass'], pkmu_mass_lc_minus['pkmu_mass'], bins=50,
     #            range=[[400, 2400], [1500, 2500]])
+    # plt.ylabel('$m_{K^{+}\\mu^{+}}$')
+    # plt.xlabel('$m_{p^{-}K^{+}\\mu^{+}}$')
     # plt.show()
 
     # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu']]
@@ -233,11 +163,8 @@ def analyse_pkmu_for_2_muons(data_frame, to_plot: bool):
 
     print(len(data_frame))
     print((pkmu_mass_lc_minus['pkmu_mass']).describe())
-    # print(list((pkmu_mass_lc_minus[pkmu_mass_lc_minus['pkmu_mass'] < 2300]).index))
     data_frame = data_frame.drop(list((pkmu_mass_lc_minus[pkmu_mass_lc_minus['pkmu_mass'] < 2800]).index))
     data_frame = data_frame.drop(list((pkmu_mass_lc_plus[pkmu_mass_lc_plus['pkmu_mass'] < 2800]).index))
-    # data_frame = data_frame.drop(pkmu_mass_lc_minus.index)
-    # data_frame = data_frame.drop(pkmu_mass_lc_plus.index)
     # plt.hist(data_frame['pk_mass'], bins=100, range=[1400, 2400])
     # plt.show()
 
@@ -253,7 +180,6 @@ def analyse_pkmu_for_2_muons2(data_frame, to_plot: bool):
     :return:
     """
     data_frame = data_frame.reset_index(drop=True)
-    data_frame, ip_cols = return_all_ip(data_frame)
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu']]
     data_frame['pkmu_mass1'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['tauMu_P', 'mu']]
@@ -297,15 +223,6 @@ def analyse_pkmu_for_2_muons2(data_frame, to_plot: bool):
     pkmu_mass_lc_minus2 = data_frame[(data_frame['proton_ID'] == -2212) & (data_frame['Kminus_ID'] == 321)]
     pkmu_mass_lc_minus2 = pkmu_mass_lc_minus2[(pkmu_mass_lc_minus2['tauMu_ID'] == +13)]
     pkmu_mass_lc_minus2['pkmu_mass'] = pkmu_mass_lc_minus2['pkmu_mass2']
-    for dfdf, name in [[pkmu_mass_lc_plus1, 'p+k-mu1-'], [pkmu_mass_lc_minus1, 'p-k+mu1+'], [pkmu_mass_lc_plus2, 'p+k-mu2-'], [pkmu_mass_lc_minus2, 'p-k+mu2+']]:
-        for col in ip_cols:
-            plt.hist(np.load(col + 'Lb_MC_data.npy'), bins=100, range=[-0.4, 0.4], density=True, alpha=0.3, label='pkmumu MC data')
-            plt.hist(dfdf[col], range=[-0.4, 0.4], bins=50, label='cleaned data', density=True, histtype='step')
-            plt.ylabel('occurrences')
-            plt.xlabel(col + ' ' + name)
-            plt.legend()
-            # plt.savefig(col + 'samesign.png')
-            plt.show()
     plt.hist(pkmu_mass_lc_minus1['pkmu_mass'], bins=100, range=[1500, 5000])
     plt.xlabel('$m_{p^{+}K^{-}\\mu^{-}}$')
     plt.show()
@@ -346,18 +263,6 @@ def pp_mass(data_frame, to_plot):
     return data_frame
 
 
-def pktauMu_mass(data_frame, to_plot):
-    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['tauMu_P', 'mu']]
-    data_frame['pktauMu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    if to_plot:
-        plt.hist(data_frame['pktauMu_mass'], bins=100)
-        plt.xlabel('$m_{pK\\mu_{\\tau}}$')
-        plt.ylabel('occurrences')
-        plt.show()
-    data_frame = data_frame[data_frame['pktauMu_mass'] > 2800]
-    return data_frame
-
-
 def kk_mass(data_frame, to_plot):
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'K']]
     data_frame['kk_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
@@ -385,8 +290,9 @@ def kpi_mass(data_frame, to_plot):
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi']]
     data_frame['kpi_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     if to_plot:
-        plt.hist(data_frame['kpi_mass'], bins=100, range=[500, 2500])
+        plt.hist(data_frame['kpi_mass'], bins=75, range=[500, 2500])
         plt.xlabel('$m_{K\\pi}$')
+        plt.axvline(masses['kstar'], c='k')
         plt.ylabel('occurrences')
         plt.show()
     return data_frame
@@ -433,16 +339,37 @@ def plot_pikmu_mass(data_frame, to_plot):
     """
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi'], ['mu1_P', 'mu']]
     data_frame['pikmu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    data_frame['pik_mass'] = get_mass(data_frame=data_frame,
+                                      particles_associations=[['Kminus_P', 'K'], ['proton_P', 'pi']])
+    data_frame['kmu_mass'] = get_mass(data_frame=data_frame,
+                                      particles_associations=[['Kminus_P', 'K'], ['mu1_P', 'mu']])
+    data_frame['pimu_mass'] = get_mass(data_frame=data_frame,
+                                       particles_associations=[['proton_P', 'pi'], ['mu1_P', 'mu']])
     if to_plot:
-        n, b, p = plt.hist(data_frame[np.sign(data_frame['mu1_ID']) == np.sign(data_frame['proton_ID'])]['pikmu_mass'],
-                           bins=50, range=[1500, 5000])
-        plt.xlabel('$m_{K\\pi\\mu}$ where p and mu have the same charge')
+        plt.hist(data_frame[np.sign(data_frame['mu1_ID']) != np.sign(data_frame['proton_ID'])]['pikmu_mass'],
+                 bins=75, range=[1500, 5000])
+        plt.xlabel('$m_{K\\pi\\mu}$ where pi and mu have the same charge')
         plt.ylabel('occurrences')
         plt.show()
-        n, b, p = plt.hist(data_frame[np.sign(data_frame['mu1_ID']) != np.sign(data_frame['proton_ID'])]['pikmu_mass'],
-                           bins=50, range=[1500, 5000])
-        plt.xlabel('$m_{K\\pi\\mu}$ where p and mu do not have the same charge')
+        plt.hist(data_frame[np.sign(data_frame['mu1_ID']) != np.sign(data_frame['proton_ID'])]['pik_mass'],
+                 bins=75, range=[500, 4000])
+        plt.xlabel('$m_{K\\pi}$')
         plt.ylabel('occurrences')
+        plt.show()
+        plt.hist(data_frame[np.sign(data_frame['mu1_ID']) != np.sign(data_frame['proton_ID'])]['pimu_mass'],
+                 bins=75, range=[400, 3500])
+        plt.xlabel('$m_{\\pi\\mu}$ where p and mu have the same charge')
+        plt.ylabel('occurrences')
+        plt.show()
+        plt.hist(data_frame[np.sign(data_frame['mu1_ID']) != np.sign(data_frame['proton_ID'])]['kmu_mass'],
+                 bins=75, range=[500, 4000])
+        plt.xlabel('$m_{K\\mu}$')
+        plt.ylabel('occurrences')
+        plt.show()
+        df_to_plot = data_frame[np.sign(data_frame['mu1_ID']) != np.sign(data_frame['proton_ID'])]
+        plt.hist2d(df_to_plot['pikmu_mass'], df_to_plot['kmu_mass'], range=[[1500, 4500], [1000, 3000]], bins=40)
+        plt.xlabel('$m_{\\pi K\\mu}$')
+        plt.ylabel('$m_{K\\mu}$')
         plt.show()
     return data_frame
 
@@ -456,9 +383,56 @@ def plot_pikmumu_mass(data_frame, to_plot):
     """
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
     data_frame['pikmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi']]
+    data_frame['pik_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     if to_plot:
-        n, b, p = plt.hist(data_frame['pikmumu_mass'], bins=100, range=[2000, 7000])
+        # data_frame = data_frame[(data_frame['Lb_M'] < 5620 - 40) | (data_frame['Lb_M'] > 5620 + 40)]
+        plt.hist(data_frame['pikmumu_mass'], bins=100, range=[2000, 7000])
+        plt.axvline(masses['B'], c='k')
+        plt.axvline(5366, c='k')  # Bs mass
         plt.xlabel('$m_{K\\pi\\mu\\mu}$')
+        plt.ylabel('occurrences')
+        plt.show()
+        test_part = data_frame[
+            (data_frame['pikmumu_mass'] < masses['B'] + 100) & (data_frame['pikmumu_mass'] > masses['B'] - 100)]
+        plt.hist(data_frame['pik_mass'], bins=50, range=[500, 2000])
+        plt.axvline(masses['kstar'], c='k')
+        plt.xlabel('$m_{K\\pi}$')
+        plt.ylabel('occurrences')
+        plt.show()
+        plt.hist(test_part['pik_mass'], bins=100, range=[500, 2000])
+        plt.axvline(masses['kstar'], c='k')
+        plt.xlabel('$m_{K\\pi}$')
+        plt.ylabel('occurrences')
+        plt.show()
+        plt.hist2d(data_frame['pikmumu_mass'], data_frame['pik_mass'], bins=30, range=[[2000, 7000], [500, 2000]])
+        plt.xlabel('$m_{K\\pi\\mu\\mu}$')
+        plt.ylabel('$m_{K\\pi}$')
+        plt.savefig('pikmumu_pik_nolb.png')
+        plt.show()
+    to_remove_b = data_frame[
+        ((data_frame['pikmumu_mass'] < 5366 + 100) & (data_frame['pikmumu_mass'] > masses['B'] - 100)) & (
+                (data_frame['pik_mass'] > masses['kstar'] - 100) & (
+                data_frame['pik_mass'] < masses['kstar'] + 100))]
+    # data_frame = data_frame[
+    #     (data_frame['pikmumu_mass'] > masses['B'] + 100) | (data_frame['pikmumu_mass'] < masses['B'] - 100)]
+    # data_frame = data_frame[(data_frame['pikmumu_mass'] > 5366 + 100) | (data_frame['pikmumu_mass'] < 5366 - 100)]
+    data_frame = data_frame.drop(to_remove_b.index)
+    return data_frame
+
+
+def plot_kmumu_mass(data_frame, to_plot):
+    """
+    Plots the pikmumu mass where the proton has a pion hypothesis
+    :param data_frame:
+    :param to_plot:
+    :return:
+    """
+    particles_associations = [['Kminus_P', 'K'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    data_frame['kmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    if to_plot:
+        plt.hist(data_frame['kmumu_mass'], bins=100)
+        plt.xlabel('$m_{k\\mu\\mu}$')
         plt.ylabel('occurrences')
         plt.show()
     return data_frame
@@ -472,11 +446,62 @@ def plot_ppimumu_mass(data_frame, to_plot):
     :return:
     """
     particles_associations = [['Kminus_P', 'pi'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    data_frame['kpimumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    data_frame['ppimumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    particles_associations = [['Kminus_P', 'pi'], ['proton_P', 'proton']]
+    data_frame['ppi_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     if to_plot:
-        n, b, p = plt.hist(data_frame['kpimumu_mass'], bins=100, range=[2000, 7000])
+        test_data = data_frame[(data_frame['ppimumu_mass'] > 5400) & (data_frame['ppimumu_mass'] < 5600)]
+        plt.hist(data_frame['ppimumu_mass'], bins=150, range=[3000, 7000])
+        plt.axvline(masses['Lb'], c='k')
         plt.xlabel('$m_{p\\pi\\mu\\mu}$')
         plt.ylabel('occurrences')
+        plt.show()
+        plt.hist(data_frame['ppi_mass'], bins=100, range=[1000, 3000])
+        plt.xlabel('$m_{p\\pi}$')
+        plt.ylabel('occurrences')
+        plt.axvline(1115, c='k')
+        plt.show()
+        plt.hist(test_data['ppi_mass'], bins=100, range=[1000, 3000])
+        plt.xlabel('$m_{p\\pi}$')
+        plt.ylabel('occurrences')
+        plt.axvline(1115, c='k')
+        plt.show()
+        plt.hist2d(data_frame['ppimumu_mass'], data_frame['ppi_mass'], bins=30, range=[[3000, 7000], [1000, 4000]])
+        plt.xlabel('$m_{p\\pi\\mu\\mu}$')
+        plt.ylabel('$m_{p\\pi}$')
+        plt.axvline(masses['Lb'], c='k')
+        plt.axhline(1115, c='k')
+        plt.show()
+    data_frame = data_frame[(data_frame['ppimumu_mass'] < 5420) | (data_frame['ppimumu_mass'] > 5620)]
+    return data_frame
+
+
+def plot_pmumumu_mass(data_frame, to_plot):
+    """
+    Plots the pikmumu mass where the proton has a pion hypothesis
+    :param data_frame:
+    :param to_plot:
+    :return:
+    """
+    particles_associations = [['Kminus_P', 'mu'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    data_frame['pmumumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    particles_associations = [['Kminus_P', 'mu'], ['proton_P', 'proton']]
+    data_frame['pmu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    if to_plot:
+        plt.hist(data_frame['pmumumu_mass'], bins=150, range=[3000, 7000])
+        plt.axvline(masses['Lb'], c='k')
+        plt.xlabel('$m_{p\\mu\\mu\\mu}$')
+        plt.ylabel('occurrences')
+        plt.show()
+        plt.hist(data_frame['pmu_mass'], bins=100, range=[1000, 4000])
+        # plt.axvline(masses['Lb'])
+        plt.xlabel('$m_{p\\mu}$')
+        plt.ylabel('occurrences')
+        plt.show()
+        plt.hist2d(data_frame['pmumumu_mass'], data_frame['pmu_mass'], bins=30, range=[[3000, 7000], [1000, 4000]])
+        plt.xlabel('$m_{p\\mu\\mu\\mu}$')
+        plt.ylabel('$m_{p\\mu}$')
+        # plt.axvline(masses['Lb'])
         plt.show()
     return data_frame
 
@@ -490,11 +515,148 @@ def plot_pipimumu_mass(data_frame, to_plot):
     """
     particles_associations = [['Kminus_P', 'pi'], ['proton_P', 'pi'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
     data_frame['pipimumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    particles_associations = [['Kminus_P', 'pi'], ['proton_P', 'pi']]
+    data_frame['pipi_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    data_frame['mumu_mass'] = get_mass(data_frame=data_frame,
+                                       particles_associations=[['mu1_P', 'mu'], ['tauMu_P', 'mu']])
+    # data_frame['pmu1_mass'] = get_mass(data_frame=data_frame, particles_associations=[['proton_P', 'pi'], ['mu1_P', 'mu']])
+    # data_frame['pmu2_mass'] = get_mass(data_frame=data_frame, particles_associations=[['proton_P', 'pi'], ['tauMu_P', 'mu']])
+    # data_frame['kmu1_mass'] = get_mass(data_frame=data_frame, particles_associations=[['Kminus_P', 'pi'], ['mu1_P', 'mu']])
+    # data_frame['kmu2_mass'] = get_mass(data_frame=data_frame, particles_associations=[['Kminus_P', 'pi'], ['tauMu_P', 'mu']])
+    # combo1 = data_frame[np.sign(data_frame['proton_ID']) == np.sign(data_frame['mu1_ID'])]
+    # combo2 = data_frame[np.sign(data_frame['proton_ID']) == np.sign(data_frame['tauMu_ID'])]
+    # combo3 = data_frame[np.sign(data_frame['Kminus_ID']) == np.sign(data_frame['mu1_ID'])]
+    # combo4 = data_frame[np.sign(data_frame['Kminus_ID']) == np.sign(data_frame['tauMu_ID'])]
+    data_frame['pipipi1_mass'] = get_mass(data_frame=data_frame,
+                                          particles_associations=[['proton_P', 'pi'], ['mu1_P', 'mu'],
+                                                                  ['tauMu_P', 'mu']])
+    data_frame['pipipi2_mass'] = get_mass(data_frame=data_frame,
+                                          particles_associations=[['Kminus_P', 'pi'], ['mu1_P', 'mu'],
+                                                                  ['tauMu_P', 'mu']])
+    data_frame['pipipi3_mass'] = get_mass(data_frame=data_frame,
+                                          particles_associations=[['Kminus_P', 'pi'], ['proton_P', 'pi'],
+                                                                  ['mu1_P', 'mu']])
+    data_frame['pipipi4_mass'] = get_mass(data_frame=data_frame,
+                                          particles_associations=[['Kminus_P', 'pi'], ['proton_P', 'pi'],
+                                                                  ['tauMu_P', 'mu']])
     if to_plot:
-        n, b, p = plt.hist(data_frame['pipimumu_mass'], bins=100, range=[2000, 7000])
+        plt.hist2d(data_frame['pipimumu_mass'], data_frame['pipi_mass'], bins=30, range=[[2000, 7000], [200, 2000]])
+        plt.xlabel('$m_{\\pi\\pi\\mu\\mu}$')
+        plt.ylabel('$m_{\\pi\\pi}$')
+        plt.show()
+        # data_frame = data_frame[(data_frame['Lb_M'] < 5620 - 40) | (data_frame['Lb_M'] > 5620 + 40)]
+        # plt.hist2d(data_frame['pipimumu_mass'], data_frame['Lb_M'], bins=30, range=[[3500, 6000], [4500, 6500]])
+        # plt.xlabel('$m_{\\pi\\pi\\mu\\mu}$')
+        # plt.ylabel('$m_{Lb}$')
+        plt.show()
+        # plt.hist(combo1['pmu1_mass'], bins=100, range=[200, 2500])
+        # plt.xlabel('combo 1')
+        # plt.show()
+        # plt.hist(combo2['pmu2_mass'], bins=100, range=[200, 2500])
+        # plt.xlabel('combo 2')
+        # plt.show()
+        # plt.hist(combo3['kmu1_mass'], bins=100, range=[200, 2500])
+        # plt.xlabel('combo 3')
+        # plt.show()
+        # plt.hist(combo4['kmu2_mass'], bins=100, range=[200, 2500])
+        # plt.xlabel('combo 4')
+        # plt.show()
+        # for i in [1, 2, 3, 4]:
+        #     plt.hist(data_frame[f'pipipi{i}_mass'], bins=100, range=[500, 6000])
+        #     plt.xlabel('$m_{\\pi\\pi\\pi} $' + str(i))
+        #     plt.ylabel('occurrences')
+        #     plt.axvline(masses['B'], c='k')
+        #     plt.show()
+        plt.hist(data_frame['pipimumu_mass'], bins=100, range=[2000, 7000])
         plt.xlabel('$m_{\\pi\\pi\\mu\\mu}$')
         plt.ylabel('occurrences')
+        plt.axvline(masses['B'], c='k')
         plt.show()
+        test_data = data_frame[
+            (data_frame['pipimumu_mass'] > masses['B']) & (data_frame['pipimumu_mass'] < masses['B'] + 100)]
+        test_data = test_data[
+            (data_frame['pipi_mass'] > masses['K'] - 100) & (data_frame['pipi_mass'] < masses['K'] + 100)]
+        # test_data = data_frame[(data_frame['pipi_mass'] < masses['K'] + 100)]
+        # for i in [1, 2, 3, 4]:
+        #     plt.hist(test_data[f'pipipi{i}_mass'], bins=100, range=[500, 6000])
+        #     plt.xlabel('$m_{\\pi\\pi pi }$' + str(i))
+        #     plt.ylabel('occurrences')
+        #     plt.show()
+        plt.hist(test_data['pipimumu_mass'], bins=100, range=[2000, 7000])
+        plt.xlabel('$m_{\\pi\\pi\\mu\\mu}$ test data')
+        plt.ylabel('occurrences')
+        plt.axvline(masses['B'], c='k')
+        plt.show()
+        plt.hist(test_data['Lb_M'], bins=100, range=[2000, 7000])
+        plt.xlabel('$m_{Lb}$ test data')
+        plt.ylabel('occurrences')
+        plt.show()
+        plt.hist(data_frame['pipi_mass'], bins=100, range=[200, 2000])
+        plt.xlabel('$m_{\\pi\\pi}$')
+        plt.ylabel('occurrences')
+        plt.axvline(masses['K'], c='k')
+        plt.show()
+        plt.hist(data_frame['mumu_mass'], bins=100, range=[200, 2000])
+        plt.xlabel('$m_{\\mu\\mu}$')
+        plt.ylabel('occurrences')
+        plt.axvline(masses['K'], c='k')
+        plt.show()
+        plt.hist(test_data['pipi_mass'], bins=100, range=[200, 2000])
+        plt.xlabel('$m_{\\pi\\pi}$ test data')
+        plt.ylabel('occurrences')
+        plt.axvline(masses['K'], c='k')
+        plt.show()
+    data_frame = data_frame[
+        (data_frame['pipimumu_mass'] < masses['B']) | (data_frame['pipimumu_mass'] > masses['B'] + 100)]
+    return data_frame
+
+
+def plot_kkmumu_mass(data_frame, to_plot):
+    """
+    Plots the pikmumu mass where the proton has a pion hypothesis
+    :param data_frame:
+    :param to_plot:
+    :return:
+    """
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'K'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    data_frame['kkmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'K']]
+    data_frame['kk_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
+    if to_plot:
+        # data_frame = data_frame[(data_frame['Lb_M'] < 5620 - 40) | (data_frame['Lb_M'] > 5620 + 40)]
+        plt.hist(data_frame['kkmumu_mass'], bins=100, range=[2500, 7000])
+        plt.xlabel('$m_{KK\\mu\\mu}$')
+        plt.ylabel('occurrences')
+        plt.axvline(5366, c='k')  # Bs mass
+        plt.show()
+        test_data = data_frame[(data_frame['kkmumu_mass'] > 5366 - 100) & (data_frame['kkmumu_mass'] < 5366 + 100)]
+        # test_data = data_frame[data_frame['kk_mass'] < 1120]
+        plt.hist(data_frame['kk_mass'], bins=100, range=[900, 2000])
+        plt.xlabel('$m_{KK}$')
+        plt.ylabel('occurrences')
+        plt.axvline(1020, c='k')
+        plt.show()
+        plt.hist(test_data['kk_mass'], bins=100, range=[900, 2000])
+        plt.xlim(right=2000)
+        plt.xlabel('$m_{KK}$')
+        plt.ylabel('occurrences')
+        plt.axvline(1020, c='k')
+        plt.show()
+        plt.hist(test_data['kkmumu_mass'], bins=100)
+        plt.xlim(right=7000)
+        plt.xlabel('$m_{KK\\mu\\mu}$')
+        plt.ylabel('occurrences')
+        plt.axvline(5366, c='k')
+        plt.show()
+        plt.hist2d(data_frame['kkmumu_mass'], data_frame['kk_mass'], bins=30, range=[[2000, 7000], [900, 2000]])
+        plt.axvline(5366, c='k')
+        plt.axhline(1020, c='k')
+        plt.xlabel('$m_{KK\\mu\\mu}$')
+        plt.ylabel('$m_{KK}$')
+        plt.show()
+    to_drop = data_frame[((data_frame['kkmumu_mass'] > 5366 - 100) & (data_frame['kkmumu_mass'] < 5366 + 100)) & (
+            (data_frame['kk_mass'] > 920) & (data_frame['kk_mass'] < 1120))]
+    data_frame = data_frame.drop(to_drop.index)
     return data_frame
 
 
@@ -507,7 +669,7 @@ def plot_pmumu_mass(data_frame, to_plot=True):
     particles_associations = [['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
     data_frame['pmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     if to_plot:
-        n, b, p = plt.hist(data_frame['pmumu_mass'], bins=70, range=[800, 5000])
+        plt.hist(data_frame['pmumu_mass'], bins=100)
         plt.xlabel('$m_{p\\mu\\mu}$')
         plt.ylabel('occurrences')
         plt.show()
@@ -523,8 +685,9 @@ def plot_pmu_mass(data_frame, to_plot):
     """
     particles_associations = [['proton_P', 'proton'], ['mu1_P', 'mu']]
     data_frame['pmu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    df_to_plot = data_frame[np.sign(data_frame['proton_ID']) != np.sign(data_frame['mu1_ID'])]
-    plt.hist(df_to_plot['pmu_mass'], bins=100, range=[1000, 3500])
+    df_to_plot = data_frame[np.sign(data_frame['proton_ID']) == np.sign(data_frame['mu1_ID'])]
+    plt.hist(df_to_plot['pmu_mass'], bins=100, range=[1400, 3700])
+    plt.xlim(right=3700)
     plt.xlabel('$m_{p\\mu}$')
     plt.ylabel('occurrences')
     plt.show()
@@ -632,8 +795,7 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
     :return:
     """
     particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    data_frame['dimuon_mass'] = sum_m
+    data_frame['dimuon_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3050)]
     print('jpsi events', len(compare_data))
     compare_data = compare_data[(compare_data['Lb_M'] < 5650) & (compare_data['Lb_M'] > 5590)]
@@ -671,7 +833,7 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
         plt.colorbar()
         plt.show()
 
-        n, b, t = plt.hist(sum_m, bins=100, range=[0, 5000])
+        n, b, t = plt.hist(data_frame['dimuon_mass'], bins=100, range=[0, 5000])
         plt.vlines(3097, ymin=0, ymax=np.max(n))
         plt.vlines(3686, 0, np.max(n))
         plt.fill_between([3040, 3160], 0, np.max(n), color='red', alpha=0.3)  # [2828, 3317]
@@ -781,9 +943,30 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
     # return compare_data
 
 
+def jpsi_swaps(data_frame):
+    """
+    Look for jpsi swaps
+    :param data_frame:
+    :return:
+    """
+    particles_duos = [['mu1_P', 'tauMu_P'], ['mu1_P', 'proton_P'], ['mu1_P', 'Kminus_P'], ['tauMu_P', 'proton_P'],
+                      ['tauMu_P', 'Kminus_P'], ['proton_P', 'Kminus_P']]
+    for p1, p2 in particles_duos:
+        particles_associations = [[p1, 'mu'], [p2, 'mu']]
+        if ('mu' in p1.lower() and 'mu' in p2.lower()) or ('mu' not in p1.lower() and 'mu' not in p2.lower()):
+            mass_frame = data_frame[np.sign(data_frame[p1[:-2] + '_ID']) != np.sign(data_frame[p2[:-2] + '_ID'])]
+        else:
+            mass_frame = data_frame[np.sign(data_frame[p1[:-2] + '_ID']) == np.sign(data_frame[p2[:-2] + '_ID'])]
+        mass = get_mass(data_frame=mass_frame, particles_associations=particles_associations)
+        plt.hist(mass, bins=100)
+        plt.axvline(masses['J/psi'], c='k')
+        plt.xlabel(p1[:-2] + ' ' + p2[:-2])
+        plt.xlim(right=4500)
+        plt.show()
+    return data_frame
+
+
 def clean_cuts(data_frame, to_plot=False):
-    # data_frame = data_frame[data_frame['mu1_L0Global_Dec']]
-    # data_frame = data_frame[data_frame['tauMu_L0Global_Dec']]
     if to_plot:
         columns_to_plot = ['proton_P', 'proton_PT', 'Kminus_P', 'Kminus_PT', 'mu1_P', 'mu1_PT', 'tauMu_P', 'tauMu_PT']
         fig, axs = plt.subplots(4, 2, gridspec_kw={'hspace': 0.5}, figsize=(10, 6))
@@ -842,8 +1025,6 @@ def clean_cuts(data_frame, to_plot=False):
     data_frame = data_frame[data_frame['proton_PIDp'] > proton_PIDp_threshold]
     data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDK'] > proton_PIDpK_threshold]
 
-    # data_frame = data_frame[(data_frame['tauMu_PIDmu'] > 3) & (data_frame['tauMu_PIDmu'] < 9)]
-    # data_frame = data_frame[(data_frame['mu1_PIDmu'] > 3) & (data_frame['mu1_PIDmu'] < 9)]
     data_frame = data_frame[(data_frame['tauMu_PIDmu'] > 5)]
     data_frame = data_frame[(data_frame['mu1_PIDmu'] > 5)]
 
@@ -852,9 +1033,6 @@ def clean_cuts(data_frame, to_plot=False):
 
 
 def chi2_cleaning(data_frame):
-    plt.hist(data_frame['Lb_FD_OWNPV'], bins=50, range=[0, 100])
-    plt.title('Lb_FD_OWNPV')
-    plt.show()
     data_frame = data_frame[data_frame['pKmu_ENDVERTEX_CHI2'] < 9]
     data_frame = data_frame[data_frame['Lb_FDCHI2_OWNPV'] > 300]
     return data_frame
@@ -889,8 +1067,6 @@ def pid_cleaning(data_frame):
     data_frame = data_frame[data_frame['proton_PIDp'] > 15]  # or 9?
     data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDK'] > 15]  # or 9?
     data_frame = data_frame[data_frame['mu1_PIDmu'] - data_frame['mu1_PIDK'] > 15]  # 9 or not?
-    # data_frame = data_frame[data_frame['Kminus_PIDK'] > 20]  # or 9?
-    # data_frame = data_frame[data_frame['proton_PIDp'] > 40]  # or 9?
     return data_frame
 
 
@@ -907,248 +1083,3 @@ def transverse_momentum_cleaning(data_frame, to_plot: bool = False):
         plt.ylabel('occurrences')
         plt.show()
     return data_frame
-
-
-def reduce_background(data_frame):
-    data_frame = clean_cuts(data_frame)
-    print('cuts cleaned', len(data_frame))
-    # data_frame = identify_p_k_j_psi(data_frame, False)
-    print('j/psi cleaning', len(data_frame))
-    data_frame = impact_parameter_cleaning(data_frame)
-    print('impact parameter cleaning', len(data_frame))
-    data_frame = pid_cleaning(data_frame)
-    print('PID cleaning', len(data_frame))
-    data_frame = chi2_cleaning(data_frame)
-    print('chi squared cleaning', len(data_frame))
-    data_frame = data_frame[data_frame['mu1_isMuon']]
-    print('mu1_isMuon cleaning', len(data_frame))
-    data_frame = data_frame[data_frame['tauMu_isMuon']]
-    print('tauMu_isMuon cleaning', len(data_frame))
-    data_frame = data_frame[data_frame['Lb_pmu_ISOLATION_BDT1'] < -0]
-    print('isolation angle cleaning', len(data_frame))
-    # data_frame = transverse_momentum_cleaning(data_frame, False)
-    print('transverse momentum cleaning', len(data_frame))
-    # data_frame = data_frame[data_frame['Lb_pmu_ISOLATION_BDT2'] < -0.5]
-    # data_frame = data_frame[data_frame['Lb_pmu_ISOLATION_BDT3'] < -0.5]
-    # data_frame = data_frame[data_frame['Lb_pmu_ISOLATION_BDT4'] < -0.5]
-    # data_frame = data_frame[data_frame['Lb_pmu_TR1_PIDmu'] <= 0]
-    # data_frame = data_frame[data_frame['Lb_pmu_TR1_PIDK'] <= -8]
-    # data_frame = data_frame[data_frame['Lb_pmu_TR1_PIDp'] <= -7]
-    # data_frame = data_frame[(data_frame['Lb_pmu_TR1_PIDK'] > -2) & (data_frame['Lb_pmu_TR1_PIDK'] <2)]
-    # data_frame = data_frame[(data_frame['Lb_pmu_TR1_PIDp'] > -3) & (data_frame['Lb_pmu_TR1_PIDp'] <1)]
-    # plt.hist(data_frame['Lb_pmu_ISOLATION_BDT2'])
-    # plt.show()
-    data_frame = identify_p_k_j_psi(data_frame, False)
-    print('j/psi cleaning', len(data_frame))
-    data_frame = analyse_pkmu_for_2_muons2(data_frame, True)
-    # data_frame = analyse_pkmu_for_2_muons(data_frame, True)
-    # data_frame = analyse_pkmu_mass(data_frame, False)
-    print('Lc cleaning', len(data_frame))
-    # particles_associations = [['mu1_P', 'mu'], ['tauMu_P', 'mu']]
-    # data_frame['dimuon_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    # plt.hist2d(data_frame['Lb_M'], data_frame['dimuon_mass'], bins=100, norm=LogNorm(), range=[[3500, 6500], [500, 4000]])
-    # plt.colorbar()
-    # plt.xlabel('Lb mass')
-    # plt.ylabel('Dimuon mass')
-    # plt.show()
-    # data_frame = pktauMu_mass(data_frame, False)
-    # data_frame = data_frame[data_frame['Lb_ENDVERTEX_CHI2']<3]
-    # plt.hist(data_frame['Lb_ENDVERTEX_CHI2'], bins=50)
-    # plt.show()
-    # data_frame = kk_mass(data_frame, False)
-    # data_frame = plot_kmu_mass(data_frame, False)
-    # data_frame = plot_pk_mass(data_frame, False)
-    # data_frame = data_frame[data_frame['Lb_pmu_ISOLATION_BDT1'] ==-2]
-    # print(len(data_frame))
-    # data_frame = data_frame.reset_index(drop=True)
-    # data_frame['vector_muTau'] = data_frame[['tauMu_PX', 'tauMu_PY', 'tauMu_PZ']].values.tolist()
-    # data_frame['tauMu_reference_point'] = data_frame[['tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']].values.tolist()
-    # data_frame['pkmu_endvertex_point'] = data_frame[['pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z']].values.tolist()
-    # data_frame['impact_parameter_thingy'] = line_point_distance(vector=data_frame['vector_muTau'],
-    #                                                             vector_point=data_frame['tauMu_reference_point'],
-    #                                                             point=data_frame['pkmu_endvertex_point'])
-    # data_frame = data_frame[data_frame['impact_parameter_thingy'] > 0.05]
-    data_frame = data_frame.reset_index(drop=True)
-    return data_frame
-
-
-def b_cleaning(data_frame, to_plot=False):
-    if to_plot:
-        plot_columns(data_frame=data_frame, bins=200, histogram_range=[-400, 400],
-                     columns_to_plot=['Kminus_TRUEID', 'proton_TRUEID', 'tauMu_TRUEID',
-                                      'mu1_TRUEID'])
-        plot_columns(data_frame=data_frame, bins=200, histogram_range=[-800, 800],
-                     columns_to_plot=['proton_MC_MOTHER_ID', 'Kminus_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID',
-                                      'tauMu_MC_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_MC_GD_MOTHER_ID',
-                                      'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID'])
-        plot_columns(data_frame=data_frame, bins=100, histogram_range=[1, 1000],
-                     columns_to_plot=['proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
-                                      'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY'])
-        plot_columns(data_frame=data_frame, bins=100, histogram_range=[-10, 10],
-                     columns_to_plot=['Kminus_TRACK_Type', 'proton_TRACK_Type', 'mu1_TRACK_Type', 'tauMu_TRACK_Type'])
-        plot_columns(data_frame=data_frame, bins=100, histogram_range=[0, 100],
-                     columns_to_plot=['Kminus_TRACK_Key', 'proton_TRACK_Key', 'mu1_TRACK_Key', 'tauMu_TRACK_Key'])
-
-    # data_frame = data_frame[data_frame['proton_PIDp'] < 0.5]
-    # data_frame = data_frame[data_frame['proton_PIDK'] < 0.5]
-    # data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDK'] < 1]
-    # data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDmu'] < 1]
-
-    # data_frame = data_frame[data_frame['Lb_MC_MOTHER_ID']>500]
-
-    # for i in range(len(data_frame)):
-    #     print(data_frame['Kminus_MC_MOTHER_ID'].loc[i], data_frame['proton_MC_MOTHER_ID'].loc[i],
-    #           data_frame['mu1_MC_MOTHER_ID'].loc[i], data_frame['tauMu_MC_MOTHER_ID'].loc[i])
-
-    # data_frame = data_frame[data_frame['mu1_MC_MOTHER_ID'].abs()==511]
-    # data_frame = data_frame[data_frame['tauMu_MC_MOTHER_ID'].abs()==15]
-    # data_frame = data_frame[data_frame['Kminus_MC_GD_MOTHER_ID'].abs() ==511]
-    # data_frame = data_frame[data_frame['proton_MC_GD_MOTHER_ID'].abs() == 511]
-    # data_frame = data_frame[data_frame['tauMu_MC_GD_MOTHER_ID'].abs() == 511]
-    print(len(data_frame))
-    data_frame = data_frame[data_frame['Kminus_TRUEID'].abs() == 321]
-    print(len(data_frame))
-    data_frame = data_frame[data_frame['proton_TRUEID'].abs() == 211]
-    # data_frame = data_frame[(data_frame['proton_TRUEID'].abs() == 211) | (data_frame['proton_TRUEID'].abs() == 321)]
-    # data_frame = data_frame[(data_frame['Kminus_TRUEID'].abs() == 211) | (data_frame['Kminus_TRUEID'].abs() == 321)]
-    print(len(data_frame))
-    data_frame = data_frame[data_frame['mu1_TRUEID'].abs() == 13]
-    print(len(data_frame))
-    data_frame = data_frame[data_frame['tauMu_TRUEID'].abs() == 13]
-    print(len(data_frame))
-
-    print('True id tests done')
-    if to_plot:
-        plot_compare_data(data_frame[data_frame['proton_MC_MOTHER_ID'].abs() == 313],
-                          data_frame[data_frame['proton_MC_MOTHER_ID'].abs() != 313], 20, ['proton_IPCHI2_OWNPV'],
-                          signal_name='protons from Kstar')
-        plt.hist(data_frame[data_frame['proton_MC_MOTHER_ID'].abs() == 313]['proton_IPCHI2_OWNPV'], bins=50,
-                 range=[0, 35], label='pions from Kstar', density=True)
-        plt.hist(data_frame[data_frame['proton_MC_MOTHER_ID'].abs() != 313]['proton_IPCHI2_OWNPV'], bins=50,
-                 range=[0, 35], label='pions not from Kstar', alpha=0.3, density=True)
-        plt.xlabel('proton_IPCHI2_OWNPV')
-        plt.legend()
-        plt.show()
-        print(data_frame['proton_MC_GD_MOTHER_ID'].describe())
-        plt.hist(data_frame[data_frame['proton_MC_MOTHER_ID'].abs() != 313]['proton_MC_MOTHER_ID'].abs(),
-                 range=[1, 600], bins=599)
-        plt.xlabel('proton_MC_MOTHER_ID')
-        plt.show()
-
-    data_frame = data_frame[data_frame['proton_MC_MOTHER_ID'].abs() == 313]
-    data_frame = data_frame[data_frame['Kminus_MC_MOTHER_ID'].abs() == 313]
-    print(len(data_frame))
-    data_frame = data_frame[(data_frame['Kminus_MC_MOTHER_ID'] == data_frame['proton_MC_MOTHER_ID']) & (
-            data_frame['Kminus_MC_MOTHER_KEY'] == data_frame['proton_MC_MOTHER_KEY'])]
-    print(len(data_frame))
-    # data_frame = data_frame[(data_frame['Kminus_MC_MOTHER_ID'] == data_frame['proton_MC_MOTHER_ID'])]
-    data_frame = data_frame[
-        (data_frame['tauMu_MC_MOTHER_ID'].abs() == 15) | (data_frame['mu1_MC_MOTHER_ID'].abs() == 15)]
-    print(len(data_frame))
-    data_frame = data_frame[
-        (data_frame['tauMu_MC_MOTHER_ID'].abs() == 511) | (data_frame['mu1_MC_MOTHER_ID'].abs() == 511)]
-    print(len(data_frame))
-    data_frame = data_frame[(data_frame['Kminus_MC_GD_MOTHER_ID'].abs() == 511)]
-    data_frame = data_frame[(data_frame['Kminus_MC_GD_MOTHER_ID'] == data_frame['proton_MC_GD_MOTHER_ID']) & (
-            data_frame['Kminus_MC_GD_MOTHER_KEY'] == data_frame['proton_MC_GD_MOTHER_KEY'])]
-    data_frame = data_frame[((data_frame['Kminus_MC_GD_MOTHER_ID'] == data_frame['tauMu_MC_GD_MOTHER_ID']) & (
-            data_frame['tauMu_MC_MOTHER_ID'].abs() == 15)) | (
-                                    (data_frame['Kminus_MC_GD_MOTHER_ID'] == data_frame['mu1_MC_GD_MOTHER_ID']) & (
-                                    data_frame['mu1_MC_MOTHER_ID'].abs() == 15))]
-
-    data_frame = data_frame[(data_frame['tauMu_MC_MOTHER_ID'].abs() == 15)]
-    print(len(data_frame))
-    data_frame = data_frame[(data_frame['mu1_MC_MOTHER_ID'].abs() == 511)]
-    print(len(data_frame))
-
-    # print((data_frame['proton_MC_MOTHER_ID'].abs()).describe())
-    print(len(data_frame))
-
-    data_frame = data_frame.reset_index()
-    # for i in range(len(data_frame)):
-    #     if data_frame['mu1_MC_MOTHER_ID'].loc[i] == 15:
-    #         for end in ['P', 'PX', 'PY', 'PZ', 'REFPX', 'REFPY', 'REFPZ']:
-    #             temp = data_frame['mu1_' + end].loc[i]
-    #             data_frame.loc[i, 'mu1_' + end] = data_frame['tauMu_' + end].loc[i]
-    #             data_frame.loc[i, 'tauMu_' + end] = temp
-
-    # for i in range(len(data_frame)):
-    #     if data_frame['proton_TRUEID'].loc[i] == 321:
-    #         for end in ['P', 'PX', 'PY', 'PZ']:
-    #             temp = data_frame['proton_' + end].loc[i]
-    #             data_frame.loc[i, 'proton_' + end] = data_frame['Kminus_' + end].loc[i]
-    #             data_frame.loc[i, 'Kminus_' + end] = temp
-
-    return data_frame
-
-
-if __name__ == '__main__':
-    a = load_data(add_branches())
-    a.dropna(inplace=True)
-    # analyse_pkmu_mass(a, True)
-    # a = a[a['Lb_pmu_ISOLATION_BDT1'] > 0.7]
-    # plot_columns(a, [-75, 75], ['Lb_pmu_TR1_PIDp', 'Lb_pmu_TR1_PIDK', 'Lb_pmu_TR1_PIDmu', 'Lb_pmu_TR1_PIDpi'], 100)
-    df = reduce_background(a)
-    df['vector_muTau'] = df[['tauMu_PX', 'tauMu_PY', 'tauMu_PZ']].values.tolist()
-    df['tauMu_reference_point'] = df[['tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']].values.tolist()
-    df['pkmu_endvertex_point'] = df[['pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z']].values.tolist()
-    df['pkmu_direction'] = df[['pKmu_PX', 'pKmu_PY', 'pKmu_PZ']].values.tolist()
-    df['impact_parameter_thingy'] = line_point_distance(vector=df['vector_muTau'],
-                                                        vector_point=df['tauMu_reference_point'],
-                                                        point=df['pkmu_endvertex_point'],
-                                                        direction=df['pkmu_direction'])
-    df = df[df['impact_parameter_thingy'] > -0.02]
-    plot_pipimumu_mass(df, True)
-    plot_ppimumu_mass(df, True)
-    plot_pikmumu_mass(df, True)
-    kpi_mass(df, True)
-    plot_pikmu_mass(df, True)
-    # plt.hist(df['mu1_PIDmu'], bins=50)
-    # plt.xlabel('mu1_PIDmu')
-    # plt.show()
-    # plt.hist(df['tauMu_PIDmu'], bins=50)
-    # plt.xlabel('tauMu_PIDmu')
-    # plt.show()
-    # plt.hist(df['proton_PIDp'], bins=50)
-    # plt.xlabel('proton_PIDp')
-    # plt.show()
-    # plt.hist(df['Kminus_PIDK'], bins=50)
-    # plt.xlabel('Kminus_PIDK')
-    # plt.show()
-
-    df = plot_pk_mass(df)
-    pp_mass(data_frame=df, to_plot=True)
-    # pktauMu_mass(df, True)
-    kpi_mass(df, True)
-    kmu_mass(df, True)
-
-    kk_mass(df, True)
-    pmu_mass(df, True)
-    df = plot_pk_mass(df)
-
-    # df = b_cleaning(a)
-    # plot_columns(df, [-50, 50], ['Lb_pmu_TR1_PIDp', 'Lb_pmu_TR1_PIDK', 'Lb_pmu_TR1_PIDmu', 'Lb_pmu_TR1_PIDpi'], 100)
-    # plt.hist2d(df['Kminus_PIDK'], df['proton_PIDp'], range=[[15, 70], [15, 70]], bins=40)
-    # plt.xlabel('Kminus_PIDK')
-    # plt.ylabel('proton_PIDp')
-    # plt.show()
-    # df = df[(df['dimuon_mass'] > 1620) & (df['dimuon_mass'] < 1840)]  # dimuon peak
-    # print(len(df))
-    analyse_pkmu_mass(df, True)
-    # df = plot_kmu_mass(df, True)
-    # identify_p_k_j_psi(df, to_plot=True)
-    # df = plot_pmumu_mass(df, True)
-    df = plot_pmu_mass(df, True)
-
-    # plot_pikmu_mass(df, True)
-    # a = b_cleaning(a, True)
-    a = clean_cuts(a, False)
-    # a = a[a['Lb_pmu_ISOLATION_BDT1'] < 0.2]
-    a = a.reset_index()
-    df = identify_p_k_j_psi(a, to_plot=False)
-    # df = plot_kmu_mass(a, True)
-
-    df = analyse_pkmu_mass(a, False)
-    df = identify_p_k_j_psi(a, to_plot=True)
-    df = plot_kmu_mass(df, True)
-    df = identify_p_k_j_psi(df, to_plot=True)
