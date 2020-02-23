@@ -3,12 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from background_reduction import reduce_background, b_cleaning, analyse_pkmu_for_2_muons2
+from background_reduction.b_MC_reduction import b_cleaning
+from background_reduction.background_reduction_methods import analyse_pkmu_for_2_muons2
+from background_reduction.data_reduction import reduce_background
 from data_loader import load_data, add_branches
-from ip_calculations import line_line_intersection, line_point_distance, return_all_ip
+from ip_calculations import line_point_distance, return_all_ip
 from masses import masses, get_mass
-from error_propagation import error_propagation_intersection, error_propagation_transverse_momentum, \
-    error_propagation_momentum_mass
 from matrix_calculations import find_determinant_of_dir_matrix, find_inverse_of_dir_matrix
 from mva import obtain_bdt
 
@@ -303,6 +303,14 @@ def plot_b_result(data_frame):
     :param data_frame:
     :return:
     """
+    df_for_bdt = data_frame[['tau_distances_travelled', 'impact_parameter_thingy', 'pKmu_ENDVERTEX_CHI2', 'Lb_pmu_ISOLATION_BDT1',
+         'proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV',
+         'Lb_FDCHI2_OWNPV']]
+    bdt = obtain_bdt()
+    predictions = bdt.decision_function(df_for_bdt)
+    data_frame['predictions_from_bdt'] = predictions
+    data_frame = data_frame[data_frame['predictions_from_bdt'] > 0.6]
+    print('final length of data', len(data_frame))
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
     sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     data_frame['b_mass'] = sum_m
@@ -328,13 +336,15 @@ def plot_result(data_frame):
     :return:
     """
     # df_for_bdt = data_frame[['tau_distances_travelled', 'impact_parameter_thingy']]
-    # df_for_bdt = data_frame[['tau_distances_travelled', 'impact_parameter_thingy', 'pKmu_ENDVERTEX_CHI2', 'Lb_pmu_ISOLATION_BDT1',
-    #      'proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV',
-    #      'Lb_FDCHI2_OWNPV']]
-    # bdt = obtain_bdt()
-    # predictions = bdt.decision_function(df_for_bdt)
-    # data_frame['predictions_from_bdt'] = predictions
-    # data_frame = data_frame[data_frame['predictions_from_bdt'] > 0.8]
+    df_for_bdt = data_frame[['tau_distances_travelled', 'impact_parameter_thingy', 'pKmu_ENDVERTEX_CHI2', 'Lb_pmu_ISOLATION_BDT1',
+         'proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV',
+         'Lb_FDCHI2_OWNPV']]
+    bdt = obtain_bdt()
+    predictions = bdt.decision_function(df_for_bdt)
+    data_frame['predictions_from_bdt'] = predictions
+    data_frame = data_frame[data_frame['predictions_from_bdt'] > 0.6]
+    # data_frame['kk_mass'] = get_mass(data_frame, [['Kminus_P', 'K'], ['proton_P', 'K']])
+    # data_frame = data_frame[data_frame['kk_mass']<1220]
     # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'pi']]
     # data_frame['pkmupi_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     #
@@ -345,7 +355,7 @@ def plot_result(data_frame):
     # plt.show()
     # data_frame = data_frame[(data_frame['pkmupi_mass'] < masses['Lb']-150) | (data_frame['pkmupi_mass'] > masses['Lb']+150)]
     # data_frame = data_frame[(data_frame['Lb_M'] < 5520) | (data_frame['Lb_M'] > 5720)]
-
+    # data_frame = data_frame[np.sign(data_frame['proton_ID']) != np.sign(data_frame['mu1_ID'])]
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
     data_frame['pkmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     length_pkmumu_signal = len(
@@ -353,12 +363,12 @@ def plot_result(data_frame):
     print(len(data_frame), length_pkmumu_signal / len(data_frame))
     minimum_mass_pkmumu = masses['proton'] + masses['K'] + masses['mu'] + masses['mu']
     # n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[5500, 5750])
-    # plt.figure(figsize=(3.5, 3), dpi=300)
+    plt.figure(figsize=(3.5, 3), dpi=300)
     n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[minimum_mass_pkmumu - 100, 9000])
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
     plt.xlabel('$m_{pK\\mu\\mu}$')
     plt.ylabel('occurrences')
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.show()
     # comparison_data = data_frame[(data_frame['pkmumu_mass'] > 5620 - 40) & (data_frame['pkmumu_mass'] < 5620 + 40)]
     # plt.hist(comparison_data['pk_mass'], bins=50)
@@ -388,7 +398,7 @@ def plot_result(data_frame):
     print('final length of the data', len(data_frame))
     minimum_mass_pkmutau = masses['proton'] + masses['K'] + masses['mu'] + masses['tau']
     # n, b, p = plt.hist(data_frame['pkmutau_mass'], bins=100, range=[4000, 15000])
-    # plt.figure(figsize=(3.5, 3), dpi=300)
+    plt.figure(figsize=(3.5, 3), dpi=300)
     n, b, p = plt.hist(
         data_frame[(data_frame['pkmumu_mass'] < 5620 - 40) | (data_frame['pkmumu_mass'] > 5620 + 40)]['pkmutau_mass'],
         bins=100, range=[minimum_mass_pkmutau - 100, 15000])
@@ -396,7 +406,50 @@ def plot_result(data_frame):
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
     plt.xlabel('$m_{pK\\mu\\tau}$')
     plt.ylabel('occurrences')
-    # plt.tight_layout()
+    plt.tight_layout()
+    plt.show()
+
+
+    df_no_lb = data_frame[(data_frame['pkmumu_mass'] < 5620 - 40) | (data_frame['pkmumu_mass'] > 5620 + 40)]
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    df_no_lb['pikmumu_mass'] = get_mass(df_no_lb, particles_associations)
+    plt.hist(df_no_lb['pikmumu_mass'], bins=100)
+    plt.xlabel('$m_{K\\pi\\mu\\mu}$')
+    plt.show()
+    particles_associations = [['Kminus_P', 'pi'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    df_no_lb['ppimumu_mass'] = get_mass(df_no_lb, particles_associations)
+    plt.hist(df_no_lb['ppimumu_mass'], bins=100)
+    plt.xlabel('$m_{p\\pi\\mu\\mu}$')
+    plt.show()
+    particles_associations = [['Kminus_P', 'pi'], ['proton_P', 'pi'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    df_no_lb['pipimumu_mass'] = get_mass(df_no_lb, particles_associations)
+    plt.hist(df_no_lb['pipimumu_mass'], bins=100)
+    plt.xlabel('$m_{\\pi\\pi\\mu\\mu}$')
+    plt.show()
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'K'], ['mu1_P', 'mu'], ['tauMu_P', 'mu']]
+    df_no_lb['kkmumu_mass'] = get_mass(df_no_lb, particles_associations)
+    plt.hist(df_no_lb['kkmumu_mass'], bins=100)
+    plt.xlabel('$m_{KK\\mu\\mu}$')
+    plt.show()
+    particles_associations = [['Kminus_P', 'K'], ['proton_P', 'K']]
+    df_no_lb['kk_mass'] = get_mass(df_no_lb, particles_associations)
+    plt.hist(df_no_lb['kk_mass'], bins=100)
+    plt.xlabel('$m_{KK}$')
+    plt.show()
+    df_no_lb['pik_mass'] = get_mass(df_no_lb, [['Kminus_P', 'K'], ['proton_P', 'pi']])
+    plt.hist(df_no_lb['pik_mass'], bins=100)
+    plt.xlabel('$m_{K\\pi}$')
+    plt.show()
+    df_no_lb['pikmu_mass'] = get_mass(df_no_lb, [['Kminus_P', 'K'], ['proton_P', 'pi'], ['mu1_P', 'mu']])
+    plt.hist(df_no_lb[np.sign(df_no_lb['proton_ID'])==np.sign(df_no_lb['mu1_ID'])]['pikmu_mass'], bins=100)
+    plt.xlabel('$m_{K\\pi\\mu}$')
+    plt.show()
+    plt.hist(df_no_lb[np.sign(df_no_lb['Kminus_ID']) == np.sign(df_no_lb['mu1_ID'])]['pikmu_mass'], bins=100)
+    plt.xlabel('$m_{K\\pi\\mu}$')
+    plt.show()
+    plt.hist2d(df_no_lb['kk_mass'], df_no_lb['kkmumu_mass'], bins=40)
+    plt.xlabel('$m_{KK}$')
+    plt.ylabel('$m_{KK\\mu\\mu}$')
     plt.show()
     # csv_storage = data_frame[data_frame['pkmutau_mass'] > 8000]
     # csv_storage = csv_storage[['tau_distances_travelled', 'impact_parameter_thingy']]
@@ -480,10 +533,6 @@ if __name__ == '__main__':
     a = load_data(add_branches())
     a.dropna(inplace=True)
     df = reduce_background(a)
-    # plt.hist(df['dimuon_mass']**2, bins=100, range=[0, 1.5e7])
-    # plt.show()
-    # df = df[df['dimuon_mass']**2 < 6e6]
-    # df = df[df['dimuon_mass']**2 > 0.1e6]
     # df = df[df['proton_P'] < 40000]
     # df = df[df['Kminus_P'] < 60000]
     # plt.hist(df['proton_P'], bins=50)
