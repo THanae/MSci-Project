@@ -35,35 +35,5 @@ def normalise_b():
     return normalisation_factor
 
 
-def f_o_m():
-    bdt = obtain_bdt()
-    Xb = pd.read_csv('b_mc_data2.csv')
-    Xb = Xb.drop(columns='Unnamed: 0')
-    data = pd.read_csv('b_mc_data2.csv')
-    data = data.drop(columns='Unnamed: 0')
-    predictions_signal = bdt.decision_function(Xb)
-    predictions_background = bdt.decision_function(data)
-    thresholds = np.linspace(-1, 1, 2000)
-    signal, background = [], []
-    punzi = []
-    for t in thresholds:
-        s = sum([1 if i >= t else 0 for i in predictions_signal]) * 0.0023072060793360356
-        b = sum([1 if i < t else 0 for i in predictions_background])
-        signal.append(s)
-        background.append(b)
-        print(s, b)
-        # b = sum([1 if i > t else 0 for i in predictions_background])
-        punzi.append(s/np.sqrt(s+b))
-    plt.plot(thresholds, [1/i for i in punzi])
-    # plt.plot(thresholds, punzi)
-    plt.show()
-    plt.plot(background, [1/i for i in punzi])
-    # plt.plot(background, punzi)
-    plt.xlabel('background')
-    plt.ylabel('signal significance')
-    plt.show()
-
-
 if __name__ == '__main__':
-    f_o_m()
     normalise_b()
