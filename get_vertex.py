@@ -312,15 +312,22 @@ def plot_b_result(data_frame):
     data_frame = data_frame[data_frame['predictions_from_bdt'] > 0.6]
     print('final length of data', len(data_frame))
     particles_associations = [['Kminus_P', 'K'], ['proton_P', 'pi'], ['mu1_P', 'mu'], ['tau_P', 'tau']]
-    sum_m = get_mass(data_frame=data_frame, particles_associations=particles_associations)
-    data_frame['b_mass'] = sum_m
+    data_frame['b_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     # np.save('B_MC_mass.npy', data_frame['b_mass'].values)
-    print('final length of the data', len(sum_m))
-    n, b, p = plt.hist(sum_m, bins=100, range=[4000, 8000])
+    print('final length of the data', len(data_frame['b_mass']))
+    n, b, p = plt.hist(data_frame['b_mass'], bins=100, range=[4000, 8000])
     plt.vlines(5279, ymin=0, ymax=np.max(n))
     plt.xlabel('$m_{B}$')
     plt.ylabel('occurrences')
     plt.show()
+    data_frame['kpi_mass'] = get_mass(data_frame=data_frame, particles_associations=[['Kminus_P', 'K'], ['proton_P', 'pi']])
+    print(data_frame['kpi_mass'])
+    n, b, p = plt.hist(data_frame['kpi_mass'], bins=100)
+    plt.vlines(892, ymin=0, ymax=np.max(n))
+    plt.xlabel('$m_{k\\pi}$')
+    plt.ylabel('occurrences')
+    plt.show()
+
     # csv_storage = data_frame[['tau_distances_travelled', 'impact_parameter_thingy']]
     # csv_storage = data_frame[
     #     ['tau_distances_travelled', 'impact_parameter_thingy', 'pKmu_ENDVERTEX_CHI2', 'Lb_pmu_ISOLATION_BDT1',
@@ -342,7 +349,8 @@ def plot_result(data_frame):
     bdt = obtain_bdt()
     predictions = bdt.decision_function(df_for_bdt)
     data_frame['predictions_from_bdt'] = predictions
-    data_frame = data_frame[data_frame['predictions_from_bdt'] > 0.6]
+    print(data_frame['predictions_from_bdt'].describe())
+    data_frame = data_frame[data_frame['predictions_from_bdt'] > 0.80]
     # data_frame['kk_mass'] = get_mass(data_frame, [['Kminus_P', 'K'], ['proton_P', 'K']])
     # data_frame = data_frame[data_frame['kk_mass']<1220]
     # particles_associations = [['Kminus_P', 'K'], ['proton_P', 'proton'], ['mu1_P', 'mu'], ['tau_P', 'pi']]
@@ -360,7 +368,10 @@ def plot_result(data_frame):
     data_frame['pkmumu_mass'] = get_mass(data_frame=data_frame, particles_associations=particles_associations)
     length_pkmumu_signal = len(
         data_frame[(data_frame['pkmumu_mass'] > 5620 - 40) & (data_frame['pkmumu_mass'] < 5620 + 40)])
-    print(len(data_frame), length_pkmumu_signal / len(data_frame))
+    try:
+        print(len(data_frame), length_pkmumu_signal / len(data_frame))
+    except ZeroDivisionError:
+        print('nothing seems to be outside of the pkmumu peak')
     minimum_mass_pkmumu = masses['proton'] + masses['K'] + masses['mu'] + masses['mu']
     # n, b, p = plt.hist(data_frame['pkmumu_mass'], bins=100, range=[5500, 5750])
     plt.figure(figsize=(3.5, 3), dpi=300)
@@ -451,6 +462,10 @@ def plot_result(data_frame):
     plt.xlabel('$m_{KK}$')
     plt.ylabel('$m_{KK\\mu\\mu}$')
     plt.show()
+    plt.hist2d(df_no_lb['pik_mass'], df_no_lb['pikmumu_mass'], bins=40)
+    plt.xlabel('$m_{K\\pi}$')
+    plt.ylabel('$m_{K\\pi\\mu\\mu}$')
+    plt.show()
     # csv_storage = data_frame[data_frame['pkmutau_mass'] > 8000]
     # csv_storage = csv_storage[['tau_distances_travelled', 'impact_parameter_thingy']]
     # csv_storage = csv_storage[
@@ -458,8 +473,8 @@ def plot_result(data_frame):
     #      'proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV',
     #      'Lb_FDCHI2_OWNPV']]
     # csv_storage.to_csv('cleaned_data_background2.csv')
-    p_and_mu1_same_charge = data_frame[np.sign(data_frame['proton_ID']) == np.sign(data_frame['mu1_ID'])]
-    p_and_mu1_diff_charge = data_frame[np.sign(data_frame['proton_ID']) != np.sign(data_frame['mu1_ID'])]
+    p_and_mu1_same_charge = data_frame[np.sign(data_frame['proton_ID']) != np.sign(data_frame['mu1_ID'])]
+    p_and_mu1_diff_charge = data_frame[np.sign(data_frame['proton_ID']) == np.sign(data_frame['mu1_ID'])]
     n, b, p = plt.hist(p_and_mu1_same_charge['pkmutau_mass'], bins=100, range=[minimum_mass_pkmutau - 100, 15000])
     plt.vlines(masses['Lb'], ymin=0, ymax=np.max(n), linewidth=0.5)
     plt.xlabel('$m_{pK\\mu\\tau}$ where p and mu have the same charge')
@@ -532,7 +547,9 @@ def get_dimuon_mass(data_frame):
 if __name__ == '__main__':
     a = load_data(add_branches())
     a.dropna(inplace=True)
-    df = reduce_background(a)
+    df = reduce_background(a, True)
+    # df = a
+    # df = b_cleaning(a)
     # df = df[df['proton_P'] < 40000]
     # df = df[df['Kminus_P'] < 60000]
     # plt.hist(df['proton_P'], bins=50)
@@ -553,8 +570,6 @@ if __name__ == '__main__':
     # plt.xlabel('Kminus_P')
     # plt.ylabel('Kminus_PIDK')
     # plt.show()
-    # df = b_cleaning(a)
-    # df = a
     # df['vector_muTau'] = df[['tauMu_PX', 'tauMu_PY', 'tauMu_PZ']].values.tolist()
     # df['tauMu_reference_point'] = df[['tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ']].values.tolist()
     # df['pkmu_endvertex_point'] = df[['pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z']].values.tolist()
