@@ -7,20 +7,22 @@ masses = {'mu': 105.658, 'tau': 1777, 'proton': 938.272, 'K': 493.677, 'pi': 139
           'Lc': 2286, 'Lb': 5620, 'B': 5279}
 
 
-def get_mass(data_frame: pd.DataFrame, particles_associations: List[List[str]], ms:Optional[List]=None) -> pd.DataFrame:
+def get_mass(data_frame: pd.DataFrame, particles_associations: List[List[str]],
+             ms: Optional[List] = None) -> pd.DataFrame:
     """
     Obtains the mass of different associations of particles
     :param data_frame:
     :param particles_associations: list of lists made of ['particle_P', 'particle']
+    :param ms: list of [particle, new mass] to replace particle mass to test for other particles
     :return:
     """
     if ms is not None:
         for a in range(len(ms)):
             masses[ms[a][0]] = ms[a][1]
     particles = [i[0] for i in particles_associations]
-    energy = sum([np.sqrt(data_frame[i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
-    mom_x = sum([data_frame[i + 'X'] for i in particles])
-    mom_y = sum([data_frame[i + 'Y'] for i in particles])
-    mom_z = sum([data_frame[i + 'Z'] for i in particles])
+    energy = sum([np.sqrt(data_frame.loc[:, i] ** 2 + masses[j] ** 2) for i, j in particles_associations])
+    mom_x = sum([data_frame.loc[:, i + 'X'] for i in particles])
+    mom_y = sum([data_frame.loc[:, i + 'Y'] for i in particles])
+    mom_z = sum([data_frame.loc[:, i + 'Z'] for i in particles])
     sum_m = np.sqrt(energy ** 2 - mom_x ** 2 - mom_y ** 2 - mom_z ** 2)
     return sum_m
