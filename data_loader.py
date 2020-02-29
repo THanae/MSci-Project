@@ -5,11 +5,11 @@ from typing import List
 
 
 def load_data(columns: List[str]):
-    '''
+    """
     Load data sets with the specified column names
     :param columns: columns to load
     :return:
-    '''
+    """
     columns = set(columns)
     file_names = ['Lb2pKmumu_2018_MagUp.root', 'Lb2pKmumu_2018_MagDown.root', 'Lb2pKmumu_2017_MagUp.root',
                   'Lb2pKmumu_2017_MagDown.root']
@@ -19,11 +19,10 @@ def load_data(columns: List[str]):
     # file_names = ['B2Kstmutau_MC_MagUp.root', 'B2Kstmutau_MC_MagDown.root']
     events_frame = pd.DataFrame()
     for f in file_names:
-        file = uproot.open(f)
+        file = uproot.open(f'C:\\Users\\Hanae\\Documents\\MSci Project\\MsciCode\\{f}')
         events = file['DecayTree'] if 'B2' not in f else file['LbTuple/DecayTree']
         print(events.show())
         events_frame = pd.concat([events_frame, events.pandas.df(columns)], axis=0, ignore_index=True)
-        print(events_frame)
     print(events_frame.index)
     return events_frame
 
@@ -40,7 +39,7 @@ def add_branches():
     lb_pmu = ['Lb_pmu_TR1_PIDp', 'Lb_pmu_TR1_PIDK', 'Lb_pmu_TR1_PIDmu', 'Lb_pmu_TR1_PIDpi']
     pkmu = ['pKmu_P', 'pKmu_ENDVERTEX_X', 'pKmu_ENDVERTEX_Y', 'pKmu_ENDVERTEX_Z', 'pKmu_OWNPV_X', 'pKmu_OWNPV_Y',
             'pKmu_OWNPV_Z', 'pKmu_PE', 'pKmu_PX', 'pKmu_PY', 'pKmu_PZ', 'pKmu_PT', 'pKmu_OWNPV_CHI2',
-            'pKmu_ENDVERTEX_CHI2']
+            'pKmu_ENDVERTEX_CHI2', 'pKmu_M']
     proton = ['proton_PE', 'proton_PX', 'proton_PY', 'proton_PZ', 'proton_P', 'proton_REFPX', 'proton_REFPY',
               'proton_REFPZ', 'proton_PT', 'proton_ProbNNp', 'proton_ProbNNe', 'proton_ProbNNk', 'proton_ProbNNpi',
               'proton_ProbNNmu', 'proton_ProbNNd', 'proton_ProbNNghost']
