@@ -70,8 +70,9 @@ def add_branches():
     mc = ['Lb_MC_MOTHER_ID', 'pKmu_MC_MOTHER_ID', 'proton_MC_MOTHER_ID', 'mu1_MC_MOTHER_ID', 'tauMu_MC_MOTHER_ID',
           'Kminus_MC_MOTHER_ID', 'Lb_MC_GD_MOTHER_ID', 'proton_MC_GD_MOTHER_ID', 'mu1_MC_GD_MOTHER_ID',
           'Kminus_MC_GD_MOTHER_ID', 'tauMu_MC_GD_MOTHER_ID', 'Kminus_ID', 'proton_ID', 'mu1_ID', 'tauMu_ID',
-          'proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY',
-          'tauMu_MC_MOTHER_KEY', 'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY', 'proton_MC_GD_MOTHER_KEY',
+          'proton_MC_MOTHER_KEY', 'Kminus_MC_MOTHER_KEY', 'mu1_MC_MOTHER_KEY', 'tauMu_MC_MOTHER_KEY',
+          'tauMu_MC_GD_MOTHER_KEY', 'Kminus_MC_GD_MOTHER_KEY', 'proton_MC_GD_MOTHER_KEY', 'mu1_MC_GD_MOTHER_KEY',
+          'proton_MC_GD_GD_MOTHER_KEY', 'Kminus_MC_GD_GD_MOTHER_KEY', 'tauMu_MC_GD_GD_MOTHER_KEY', 'mu1_MC_GD_GD_MOTHER_KEY',
           'proton_TRUEID', 'Kminus_TRUEID', 'mu1_TRUEID', 'tauMu_TRUEID', 'proton_IPCHI2_OWNPV',
           'Kminus_TRACK_Type', 'proton_TRACK_Type', 'mu1_TRACK_Type', 'tauMu_TRACK_Type',
           'Kminus_TRACK_Key', 'proton_TRACK_Key', 'mu1_TRACK_Key', 'tauMu_TRACK_Key']
