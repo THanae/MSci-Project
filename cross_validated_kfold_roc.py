@@ -22,13 +22,13 @@ X, y = get_x_and_y()
 # signal = len(pd.read_csv('b_mc_data2.csv')) * 0.0023072060793360356
 # signal = 120
 # background = 2458 - 120
-signal = 62
-background = 769 - 62
+signal = 3
+background = 106
 print(signal, background)
 cv = StratifiedKFold(n_splits=3)
 bdt = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2), algorithm="SAMME", n_estimators=500, learning_rate=0.01)
 tprs, aucs = [], []
-mean_fpr = np.linspace(0, 1, 100000)
+mean_fpr = np.linspace(0, 1, 200000)
 mean_tpr = 0
 
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
@@ -85,9 +85,15 @@ ax1.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2, label
 # ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05], title="Receiver operating characteristic curve")
 ax1.legend(loc="lower right")
 sig = signal * np.array(mean_tpr) / np.sqrt(signal * np.array(mean_tpr) + background * np.array(mean_fpr))
+e_t = signal * np.array(mean_tpr) / (4 * 10 ** 15 * 280 * 10 ** (-6) * 13.5 / 8)
+print(e_t)
+sig2 = np.array(mean_tpr) / (5 / 2 + np.sqrt(background * np.array(mean_fpr)))
 print(sig)
-ax1.axvline(mean_fpr[np.nanargmax(sig[1:])+1])
+ax1.axvline(mean_fpr[np.nanargmax(sig)])
+ax1.axvline(mean_fpr[np.nanargmax(sig2)])
 ax2.plot(mean_fpr, sig, color='k', label=r'Signal significance', lw=2, alpha=.8)
-ax2.legend(loc="lower right")
 ax2.axvline(mean_fpr[np.nanargmax(sig)])
+ax3 = ax2.twinx()
+ax3.plot(mean_fpr, sig2, color='b', label=r'Signal significance 2', lw=2, alpha=.8)
+ax2.legend(loc="lower right")
 plt.show()
