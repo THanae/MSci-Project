@@ -85,7 +85,7 @@ def analyse_pkmu_for_2_muons(data_frame, pkmu_threshold: int = 2800, to_plot: bo
     """
     Analyse the pkmu mass of the data set and cut on the pkmu mass
     :param data_frame: data frame to cut on
-    :pkmu_threshold: threshold at which to cut the pkmu mass
+    :param pkmu_threshold: threshold at which to cut the pkmu mass
     :param to_plot: if True, the pkmu mass is plotted, along with other parameters
     :return:
     """

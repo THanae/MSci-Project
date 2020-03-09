@@ -4,10 +4,10 @@ from background_reduction.background_reduction_methods import clean_cuts, identi
 from background_reduction.mass_replacements import plot_pipimumu_mass, plot_ppimumu_mass, plot_pikmumu_mass, \
     plot_pikmu_mass, plot_pk_mass, pp_mass, kk_mass, plot_pmu_mass, \
     plot_kmumu_mass, jpsi_swaps, plot_kkmumu_mass, plot_pmumu_mass, plot_kpmumu_mass
-from data_loader import load_data, add_branches
+from data_loader import load_data
 
 
-def reduce_background(data_frame, bdt=False):
+def reduce_background(data_frame, bdt=False, pkmu_threshold: int=2800):
     data_frame = clean_cuts(data_frame)
     print('cuts cleaned', len(data_frame))
     data_frame = identify_p_k_j_psi(data_frame, False)
@@ -27,9 +27,9 @@ def reduce_background(data_frame, bdt=False):
         print('isolation angle cleaning', len(data_frame))
         # data_frame = transverse_momentum_cleaning(data_frame, False)
         # print('transverse momentum cleaning', len(data_frame))
-    data_frame = analyse_pkmu_for_2_muons(data_frame, to_plot=False)
+    data_frame = analyse_pkmu_for_2_muons(data_frame, to_plot=False, pkmu_threshold=pkmu_threshold)
     print('Lc cleaning', len(data_frame))
-    data_frame = kmu_cut(data_frame)
+    # data_frame = kmu_cut(data_frame)
     print('Kmu cleaning', len(data_frame))
     data_frame = remove_high_pkmu_mass(data_frame)
     print('high pkmu cleaning', len(data_frame))
@@ -42,7 +42,7 @@ def reduce_background(data_frame, bdt=False):
 
 
 if __name__ == '__main__':
-    a = load_data(add_branches())
+    a = load_data(df_name='Lb_data')
     a.dropna(inplace=True)
     df = reduce_background(a)
     # df = a

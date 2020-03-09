@@ -2,14 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from masses import masses, get_mass
-from background_reduction.background_reduction_methods import clean_cuts, identify_p_k_j_psi, \
-    impact_parameter_cleaning, chi2_cleaning, kmu_cut
-from data_loader import load_data, add_branches
+from background_reduction.background_reduction_methods import identify_p_k_j_psi, impact_parameter_cleaning, \
+    chi2_cleaning, kmu_cut
+from data_loader import load_data
 from ip_calculations import line_point_distance
 from plotting_functions import plot_columns, plot_compare_data
 
 
-def b_cleaning(data_frame, to_plot=False):
+def b_cleaning(data_frame, to_plot=False, pkmu_threshold: int = 2800):
     if to_plot:
         plot_columns(data_frame=data_frame, bins=200, histogram_range=[-400, 400],
                      columns_to_plot=['Kminus_TRUEID', 'proton_TRUEID', 'tauMu_TRUEID',
@@ -25,17 +25,6 @@ def b_cleaning(data_frame, to_plot=False):
                      columns_to_plot=['Kminus_TRACK_Type', 'proton_TRACK_Type', 'mu1_TRACK_Type', 'tauMu_TRACK_Type'])
         plot_columns(data_frame=data_frame, bins=100, histogram_range=[0, 100],
                      columns_to_plot=['Kminus_TRACK_Key', 'proton_TRACK_Key', 'mu1_TRACK_Key', 'tauMu_TRACK_Key'])
-
-    # data_frame = data_frame[data_frame['proton_PIDp'] < 0.5]
-    # data_frame = data_frame[data_frame['proton_PIDK'] < 0.5]
-    # data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDK'] < 1]
-    # data_frame = data_frame[data_frame['proton_PIDp'] - data_frame['proton_PIDmu'] < 1]
-
-    # data_frame = data_frame[data_frame['Lb_MC_MOTHER_ID']>500]
-
-    # for i in range(len(data_frame)):
-    #     print(data_frame['Kminus_MC_MOTHER_ID'].loc[i], data_frame['proton_MC_MOTHER_ID'].loc[i],
-    #           data_frame['mu1_MC_MOTHER_ID'].loc[i], data_frame['tauMu_MC_MOTHER_ID'].loc[i])
 
     # data_frame = data_frame[data_frame['mu1_MC_MOTHER_ID'].abs()==511]
     # data_frame = data_frame[data_frame['tauMu_MC_MOTHER_ID'].abs()==15]
@@ -117,8 +106,8 @@ def b_cleaning(data_frame, to_plot=False):
     #             data_frame.loc[i, 'Kminus_' + end] = temp
 
     data_frame = identify_p_k_j_psi(data_frame, False)
-    data_frame = kmu_cut(data_frame)
-    print('Kmu cleaning', len(data_frame))
+    # data_frame = kmu_cut(data_frame)
+    # print('Kmu cleaning', len(data_frame))
     data_frame['stretched'] = get_stretched_pikmu_mass(data_frame,
                                                        [['proton_P', 'pi'], ['Kminus_P', 'K'], ['mu1_P', 'mu']])
     data_frame['stretched2'] = get_stretched_pikmu_mass(data_frame,
@@ -133,7 +122,7 @@ def b_cleaning(data_frame, to_plot=False):
     print(len(df2[df2['stretched2'] > 3000]) / len(df2))
     print((len(df2[df2['stretched2'] > 2800]) + len(df1[df1['stretched'] > 2800])) / n)
     print((len(df2[df2['stretched2'] > 3000]) + len(df1[df1['stretched'] > 3000])) / n)
-    to_drop_1, to_drop_2 = df1[df1['stretched'] < 2800], df2[df2['stretched2'] < 2800]
+    to_drop_1, to_drop_2 = df1[df1['stretched'] < pkmu_threshold], df2[df2['stretched2'] < pkmu_threshold]
     data_frame = data_frame.drop(list(to_drop_1.index))
     data_frame = data_frame.drop(list(to_drop_2.index))
     data_frame = data_frame.reset_index(drop=True)
@@ -146,6 +135,10 @@ def b_cleaning(data_frame, to_plot=False):
     data_frame = data_frame[data_frame['mu1_PT'] > mu1_PT_threshold]
     data_frame = data_frame[data_frame['tauMu_P'] > tauMu_P_threshold]
     data_frame = data_frame[data_frame['tauMu_PT'] > tauMu_PT_threshold]
+    data_frame['pikmu_mass'] = get_mass(data_frame, [['proton_P', 'pi'], ['Kminus_P', 'K'], ['mu1_P', 'mu']])
+    print(len(data_frame))
+    data_frame = data_frame[data_frame['pikmu_mass'] < masses['B'] - masses['tau']]
+    print(len(data_frame))
     return data_frame
 
 
@@ -203,7 +196,7 @@ def diff_candidates_check(data_frame):
 
 
 if __name__ == '__main__':
-    a = load_data(add_branches())
+    a = load_data(df_name='B_MC')
     df = b_cleaning(a)
     diff_candidates_check(df)
     df['stretched'] = get_stretched_pikmu_mass(df, [['proton_P', 'pi'], ['Kminus_P', 'K'], ['mu1_P', 'mu']])
