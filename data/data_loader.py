@@ -10,20 +10,21 @@ def load_data(df_name: str = 'Lb_data') -> pd.DataFrame:
     :param df_name: name of df to use (Lb_data, B_MC or Lb_MC)
     :return:
     """
-    assert df_name in ['Lb_data', 'Lb_Mc', 'B_MC'], f'{df_name} not implemented'
+    assert df_name in ['Lb_data', 'Lb_MC', 'B_MC'], f'{df_name} not implemented'
     columns = add_branches(df_name)
     columns = set(columns)
     if df_name == 'Lb_data':
         file_names = ['Lb2pKmumu_2018_MagUp.root', 'Lb2pKmumu_2018_MagDown.root', 'Lb2pKmumu_2017_MagUp.root',
                       'Lb2pKmumu_2017_MagDown.root']
-    elif df_name == 'Lb_Mc':
+        # file_names = ['Lb2pKmumu_2018_MagUp.root']
+    elif df_name == 'Lb_MC':
         file_names = ['Lb2pKmumu_MC_MagUp.root', 'Lb2pKmumu_MC_MagDown.root']
     else:  # df_name == 'B_MC'
         # file_names = ['B2Ksttaumu_MC_MagUp.root', 'B2Ksttaumu_MC_MagDown.root']
         file_names = ['B2Kstmutau_MC_MagUp.root', 'B2Kstmutau_MC_MagDown.root']
     events_frame = pd.DataFrame()
     for f in file_names:
-        file = uproot.open(f'C:\\Users\\Hanae\\Documents\\MSci Project\\MsciCode\\{f}')
+        file = uproot.open(f'C:\\Users\\Hanae\\Documents\\MSci Project\\MsciCode\\data\\{f}')
         events = file['DecayTree'] if 'B2' not in f else file['LbTuple/DecayTree']
         events_frame = pd.concat([events_frame, events.pandas.df(columns)], axis=0, ignore_index=True)
     print(events_frame.index)
@@ -56,16 +57,16 @@ def add_branches(df_name: str = 'Lb_data') -> List[str]:
     mu2 = ['tauMu_PE', 'tauMu_PX', 'tauMu_PY', 'tauMu_PZ', 'tauMu_P', 'tauMu_REFPX', 'tauMu_REFPY', 'tauMu_REFPZ',
            'tauMu_L0Global_Dec', 'tauMu_PT', 'tauMu_isMuon', 'tauMu_ProbNNe', 'tauMu_ProbNNk', 'tauMu_ProbNNp',
            'tauMu_ProbNNpi', 'tauMu_ProbNNmu', 'tauMu_ProbNNghost']
-    error_pkmu_ref = ['pKmu_REFP_COVXX', 'pKmu_REFP_COVYY', 'pKmu_REFP_COVZZ', 'pKmu_REFP_COVXY', 'pKmu_REFP_COVXZ',
-                      'pKmu_REFP_COVYZ']
-    error_taumu = ['tauMu_REFP_COVXX', 'tauMu_REFP_COVYY', 'tauMu_REFP_COVZZ', 'tauMu_REFP_COVXY', 'tauMu_REFP_COVXZ',
-                   'tauMu_REFP_COVYZ']
-    p_ref_cov = [x + '_P_REFP_COV_P' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters
-                 in ['X_X', 'Y_X', 'Y_Y', 'Z_Z', 'Y_Z', 'Z_X', 'Z_Y', 'X_Y', 'X_Z', 'Y_Z']]
-    p_cov = [x + '_P_COV' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters in
-             ['XX', 'YY', 'ZZ', 'XY', 'XZ', 'YZ']]
-    errors = error_pkmu_ref + error_taumu + p_cov + p_ref_cov
-    # errors = []
+    # error_pkmu_ref = ['pKmu_REFP_COVXX', 'pKmu_REFP_COVYY', 'pKmu_REFP_COVZZ', 'pKmu_REFP_COVXY', 'pKmu_REFP_COVXZ',
+    #                   'pKmu_REFP_COVYZ']
+    # error_taumu = ['tauMu_REFP_COVXX', 'tauMu_REFP_COVYY', 'tauMu_REFP_COVZZ', 'tauMu_REFP_COVXY', 'tauMu_REFP_COVXZ',
+    #                'tauMu_REFP_COVYZ']
+    # p_ref_cov = [x + '_P_REFP_COV_P' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters
+    #              in ['X_X', 'Y_X', 'Y_Y', 'Z_Z', 'Y_Z', 'Z_X', 'Z_Y', 'X_Y', 'X_Z', 'Y_Z']]
+    # p_cov = [x + '_P_COV' + letters for x in ['proton', 'Kminus', 'mu1', 'tauMu', 'Lb', 'pKmu'] for letters in
+    #          ['XX', 'YY', 'ZZ', 'XY', 'XZ', 'YZ']]
+    # errors = error_pkmu_ref + error_taumu + p_cov + p_ref_cov
+    errors = []
     ip = ['proton_IPCHI2_OWNPV', 'Kminus_IPCHI2_OWNPV', 'mu1_IPCHI2_OWNPV', 'tauMu_IPCHI2_OWNPV', 'pKmu_IPCHI2_OWNPV']
     pid = ['proton_PIDe', 'Kminus_PIDe', 'Kminus_PIDK', 'Kminus_PIDmu', 'proton_PIDK', 'proton_PIDp', 'proton_PIDmu',
            'proton_PIDp', 'Kminus_PIDK', 'mu1_PIDmu', 'tauMu_PIDmu', 'proton_PIDK', 'proton_PIDmu', 'proton_PIDd',
