@@ -198,6 +198,7 @@ def identify_p_k_j_psi(data_frame, to_plot=True):
     compare_data = data_frame[(data_frame['dimuon_mass'] < 3150) & (data_frame['dimuon_mass'] > 3050)]
     print('jpsi events', len(compare_data))
     compare_data = compare_data[(compare_data['Lb_M'] < 5650) & (compare_data['Lb_M'] > 5590)]
+    print('jpsi events from Lb', len(compare_data))
     # data_frame = data_frame[(data_frame['dimuon_mass'] > 3150) | (data_frame['dimuon_mass'] < 3050)]
     # data_frame = data_frame[
     #     (data_frame['dimuon_mass'] > masses['J/psi'] + 50) | (data_frame['dimuon_mass'] < masses['J/psi'] - 250)]

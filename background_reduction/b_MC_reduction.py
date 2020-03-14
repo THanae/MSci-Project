@@ -2,10 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from masses import masses, get_mass
-from background_reduction.background_reduction_methods import identify_p_k_j_psi, impact_parameter_cleaning, \
-    chi2_cleaning, kmu_cut
-from data_loader import load_data
-from ip_calculations import line_point_distance
+from background_reduction.background_reduction_methods import identify_p_k_j_psi
+from data.data_loader import load_data
 from plotting_functions import plot_columns, plot_compare_data
 
 
@@ -121,7 +119,6 @@ def b_cleaning(data_frame, to_plot=False, pkmu_threshold: int = 2800):
     print(len(df2[df2['stretched2'] > 2800]) / len(df2))
     print(len(df2[df2['stretched2'] > 3000]) / len(df2))
     print((len(df2[df2['stretched2'] > 2800]) + len(df1[df1['stretched'] > 2800])) / n)
-    print((len(df2[df2['stretched2'] > 3000]) + len(df1[df1['stretched'] > 3000])) / n)
     to_drop_1, to_drop_2 = df1[df1['stretched'] < pkmu_threshold], df2[df2['stretched2'] < pkmu_threshold]
     data_frame = data_frame.drop(list(to_drop_1.index))
     data_frame = data_frame.drop(list(to_drop_2.index))
@@ -135,9 +132,22 @@ def b_cleaning(data_frame, to_plot=False, pkmu_threshold: int = 2800):
     data_frame = data_frame[data_frame['mu1_PT'] > mu1_PT_threshold]
     data_frame = data_frame[data_frame['tauMu_P'] > tauMu_P_threshold]
     data_frame = data_frame[data_frame['tauMu_PT'] > tauMu_PT_threshold]
-    data_frame['pikmu_mass'] = get_mass(data_frame, [['proton_P', 'pi'], ['Kminus_P', 'K'], ['mu1_P', 'mu']])
-    print(len(data_frame))
-    data_frame = data_frame[data_frame['pikmu_mass'] < masses['B'] - masses['tau']]
+    # data_frame['pikmu_mass'] = get_mass(data_frame, [['proton_P', 'pi'], ['Kminus_P', 'K'], ['mu1_P', 'mu']])
+    # print(len(data_frame))
+    # data_frame = data_frame[data_frame['pikmu_mass'] < masses['B'] - masses['tau']]
+    # print(len(data_frame))
+    data_frame['stretchedkmu'] = get_stretched_kmu_mass(data_frame, [['Kminus_P', 'K'], ['mu1_P', 'mu']])
+    data_frame['stretchedkmu2'] = get_stretched_kmu_mass(data_frame, [['Kminus_P', 'K'], ['tauMu_P', 'mu']])
+    df1_kmu = data_frame[np.sign(data_frame['proton_TRUEID']) != np.sign(data_frame['mu1_TRUEID'])]
+    df2_kmu = data_frame[np.sign(data_frame['proton_TRUEID']) == np.sign(data_frame['mu1_TRUEID'])]
+    n = len(df1_kmu) + len(df1_kmu)
+    print(len(df1_kmu[df1_kmu['stretchedkmu'] > masses['D0']]) / len(df1_kmu))
+    print(len(df2_kmu[df2_kmu['stretchedkmu2'] > masses['D0']]) / len(df2_kmu))
+    print((len(df2_kmu[df2_kmu['stretchedkmu2'] > masses['D0']]) + len(df1_kmu[df1_kmu['stretchedkmu'] > masses['D0']])) / n)
+    to_drop_1_kmu, to_drop_2_kmu = df1_kmu[df1_kmu['stretchedkmu'] < masses['D0']], df2_kmu[df2_kmu['stretchedkmu2'] < masses['D0']]
+    data_frame = data_frame.drop(list(to_drop_1_kmu.index))
+    data_frame = data_frame.drop(list(to_drop_2_kmu.index))
+    data_frame = data_frame.reset_index(drop=True)
     print(len(data_frame))
     return data_frame
 

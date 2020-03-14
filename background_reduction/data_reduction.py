@@ -1,10 +1,8 @@
 from background_reduction.background_reduction_methods import clean_cuts, identify_p_k_j_psi, \
-    pid_cleaning, chi2_cleaning, analyse_pkmu_for_2_muons, ip_star_cleaning, kmu_cut, remove_high_pkmu_mass, \
-    impact_parameter_cleaning
-from background_reduction.mass_replacements import plot_pipimumu_mass, plot_ppimumu_mass, plot_pikmumu_mass, \
-    plot_pikmu_mass, plot_pk_mass, pp_mass, kk_mass, plot_pmu_mass, \
-    plot_kmumu_mass, jpsi_swaps, plot_kkmumu_mass, plot_pmumu_mass, plot_kpmumu_mass
-from data_loader import load_data
+    pid_cleaning, chi2_cleaning, analyse_pkmu_for_2_muons, ip_star_cleaning, impact_parameter_cleaning, kmu_cut
+from background_reduction.mass_replacements import plot_ppimumu_mass, plot_pikmumu_mass, \
+    plot_pikmu_mass, pp_mass, kk_mass, plot_kmumu_mass, plot_kpmumu_mass
+from data.data_loader import load_data
 
 
 def reduce_background(data_frame, bdt=False, pkmu_threshold: int=2800):
@@ -29,10 +27,10 @@ def reduce_background(data_frame, bdt=False, pkmu_threshold: int=2800):
         # print('transverse momentum cleaning', len(data_frame))
     data_frame = analyse_pkmu_for_2_muons(data_frame, to_plot=False, pkmu_threshold=pkmu_threshold)
     print('Lc cleaning', len(data_frame))
-    # data_frame = kmu_cut(data_frame)
+    data_frame = kmu_cut(data_frame)
     print('Kmu cleaning', len(data_frame))
-    data_frame = remove_high_pkmu_mass(data_frame)
-    print('high pkmu cleaning', len(data_frame))
+    # data_frame = remove_high_pkmu_mass(data_frame)
+    # print('high pkmu cleaning', len(data_frame))
     if not bdt:
         data_frame = data_frame.reset_index(drop=True)
         data_frame = ip_star_cleaning(data_frame)
