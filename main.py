@@ -1,7 +1,7 @@
 from background_reduction.b_MC_reduction import b_cleaning
 from background_reduction.data_reduction import reduce_background
-from data_loader import load_data
-from get_vertex import retrieve_vertices, transverse_momentum, line_plane_intersection, tau_momentum_mass, \
+from data.data_loader import load_data
+from get_vertex import obtain_lb_line_of_flight, transverse_momentum, line_plane_intersection, tau_momentum_mass, \
     plot_result, plot_b_result
 
 df_name = 'Lb_data'
@@ -16,7 +16,7 @@ elif df_name == 'B_MC':
 else:
     df = a
 df = df.reset_index(drop=True)
-df = retrieve_vertices(df)
+df = obtain_lb_line_of_flight(df)
 df = transverse_momentum(df)
 df = line_plane_intersection(df)
 df = tau_momentum_mass(df)
